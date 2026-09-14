@@ -4,6 +4,8 @@ import { focusIntro, focusAreas, focusHighlight } from '../data/experience';
 import highlightImage from '../assets/images/secon.jpg';
 
 const optimizedHighlight = await getImage({ src: highlightImage, width: 900, format: 'webp', quality: 75 });
+
+const CARD_SHADES = ['bg-[#2F6B4F]', 'bg-[#8A4E1E]', 'bg-[#3F5232]', 'bg-[#A8611F]'];
 ---
 
 <section id="experience" class="mx-auto max-w-[1440px] px-4 py-20 sm:px-8 sm:py-24 lg:px-12">
@@ -12,7 +14,7 @@ const optimizedHighlight = await getImage({ src: highlightImage, width: 900, for
       <p class="font-body text-xs font-medium tracking-[0.15em] text-neutral-400">{focusIntro.eyebrow}</p>
       <h2 class="mt-3 font-display text-[clamp(2.25rem,6vw,3.75rem)] font-semibold leading-[1.05]">
         <span class="block text-neutral-900">{focusIntro.heading[0]}</span>
-        <span class="block text-[#A67C90]">{focusIntro.heading[1]}</span>
+        <span class="block text-[#C1701F]">{focusIntro.heading[1]}</span>
       </h2>
     </div>
     <p class="font-body text-sm leading-relaxed text-neutral-500 sm:max-w-[220px] sm:text-right">
@@ -22,34 +24,22 @@ const optimizedHighlight = await getImage({ src: highlightImage, width: 900, for
 
   <div class="mt-12 grid grid-cols-1 gap-4 sm:mt-16 sm:grid-cols-2 lg:grid-cols-4">
     {focusAreas.map((area, i) => {
-      const isFeatured = i === 0;
+      const shade = CARD_SHADES[i % CARD_SHADES.length];
       return (
-        <div
-          class={`flex min-h-[320px] flex-col justify-between p-6 ${
-            isFeatured ? 'bg-[#5A2A45] text-white' : 'border border-neutral-200 text-neutral-900'
-          }`}
-        >
-          <div class="flex items-start justify-between">
-            <p class={`font-body text-[11px] font-medium tracking-[0.12em] ${isFeatured ? 'text-white/70' : 'text-neutral-400'}`}>
+        <div class={`card-grain relative flex min-h-[320px] flex-col justify-between overflow-hidden p-6 text-white ${shade}`}>
+          <div class="relative flex items-start justify-between">
+            <p class="font-body text-[11px] font-medium tracking-[0.12em] text-white/60">
               {area.index} / {area.label}
             </p>
-            <svg
-              viewBox="0 0 24 24"
-              class={`h-4 w-4 ${isFeatured ? 'text-white/80' : 'text-neutral-400'}`}
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M7 17 17 7M9 7h8v8" />
+            <svg viewBox="0 0 24 24" class="h-4 w-4 text-white/70" fill="currentColor">
+              <path d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5L12 2Z" />
             </svg>
           </div>
 
-          <div>
+          <div class="relative">
             <svg
               viewBox="0 0 24 24"
-              class={`h-8 w-8 ${isFeatured ? 'text-white' : 'text-neutral-800'}`}
+              class="h-8 w-8 text-white"
               fill="none"
               stroke="currentColor"
               stroke-width="1.6"
@@ -57,8 +47,8 @@ const optimizedHighlight = await getImage({ src: highlightImage, width: 900, for
               stroke-linejoin="round"
               set:html={area.icon}
             />
-            <h3 class="mt-6 font-display text-xl font-semibold">{area.title}</h3>
-            <p class={`mt-1 font-body text-sm ${isFeatured ? 'text-white/70' : 'text-neutral-500'}`}>{area.sub}</p>
+            <h3 class="mt-6 font-display text-xl font-semibold text-white">{area.title}</h3>
+            <p class="mt-1 font-body text-sm text-white/70">{area.sub}</p>
           </div>
         </div>
       );
@@ -99,3 +89,15 @@ const optimizedHighlight = await getImage({ src: highlightImage, width: 900, for
     </div>
   </div>
 </section>
+
+<style>
+  .card-grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+</style>

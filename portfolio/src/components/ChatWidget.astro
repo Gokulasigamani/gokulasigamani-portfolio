@@ -107,7 +107,8 @@ import { chatWidget } from '../data/experience';
     content: '';
     position: absolute;
     inset: 0;
-    padding: 1.5px;
+    z-index: 20;
+    padding: 2.5px;
     background: conic-gradient(
       from var(--chat-border-angle),
       #e3a17e,
@@ -152,8 +153,67 @@ import { chatWidget } from '../data/experience';
   }
 </style>
 
+<style is:global>
+  .chat-content p {
+    margin: 0;
+  }
+
+  .chat-content p + p {
+    margin-top: 0.5em;
+  }
+
+  .chat-content ul,
+  .chat-content ol {
+    margin: 0.4em 0 0;
+    padding-left: 1.1em;
+  }
+
+  .chat-content ul {
+    list-style: disc;
+  }
+
+  .chat-content ol {
+    list-style: decimal;
+  }
+
+  .chat-content li + li {
+    margin-top: 0.2em;
+  }
+
+  .chat-content strong {
+    font-weight: 700;
+  }
+
+  .chat-content a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+</style>
+
 <script>
+  import { marked } from 'marked';
+
+  marked.setOptions({ breaks: true });
+
   type ChatMessage = { role: 'user' | 'assistant'; content: string };
+
+  const NAV_VERB = /\b(navigate|take me|go to|show me|open|visit|bring me)\b/i;
+  const NAV_INTENTS: { path: string; label: string; keywords: RegExp }[] = [
+    { path: '/blog', label: 'the blog', keywords: /\bblog\b/i },
+    { path: '/#experience', label: 'the experience section', keywords: /\b(experience|work history|career)\b/i },
+    { path: '/#achievements', label: 'achievements', keywords: /\b(achievements?|awards?|certifications?)\b/i },
+    { path: '/#about', label: 'the about section', keywords: /\babout\b/i },
+    { path: '/contact', label: 'the contact page', keywords: /\b(contact|get in touch|reach out|touch)\b/i },
+    { path: '/', label: 'the home page', keywords: /\bhome\b/i }
+  ];
+
+  function detectNavigation(message: string): { path: string; label: string } | null {
+    if (!NAV_VERB.test(message)) return null;
+    for (const intent of NAV_INTENTS) {
+      if (intent.keywords.test(message)) return intent;
+    }
+    return null;
+  }
 
   const toggle = document.getElementById('chat-toggle');
   const panel = document.getElementById('chat-panel');
@@ -207,12 +267,17 @@ import { chatWidget } from '../data/experience';
       wrapper.appendChild(avatar);
     }
 
-    const bubble = document.createElement('p');
+    const bubble = document.createElement('div');
     bubble.className =
       role === 'user'
         ? 'max-w-[80%] border border-white/20 bg-[#241B26]/80 px-3.5 py-2.5 font-body text-sm leading-relaxed text-white backdrop-blur-md'
-        : 'max-w-[80%] border border-white/50 bg-white/60 px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-800 shadow-sm backdrop-blur-md';
-    bubble.textContent = content;
+        : 'chat-content max-w-[80%] border border-white/50 bg-white/60 px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-800 shadow-sm backdrop-blur-md';
+
+    if (role === 'assistant') {
+      bubble.innerHTML = marked.parse(content) as string;
+    } else {
+      bubble.textContent = content;
+    }
     wrapper.appendChild(bubble);
 
     messagesEl.appendChild(wrapper);
@@ -248,8 +313,19 @@ import { chatWidget } from '../data/experience';
 
     quickLinksEl?.classList.add('hidden');
     addMessage('user', message);
-    history.push({ role: 'user', content: message });
     input.value = '';
+
+    const navIntent = detectNavigation(message);
+    if (navIntent) {
+      addMessage('assistant', `Heading to ${navIntent.label} now.`);
+      input.disabled = true;
+      setTimeout(() => {
+        window.location.href = navIntent.path;
+      }, 700);
+      return;
+    }
+
+    history.push({ role: 'user', content: message });
     input.disabled = true;
     addTyping();
 

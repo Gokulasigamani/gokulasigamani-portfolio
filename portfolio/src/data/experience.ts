@@ -284,7 +284,6 @@ export const chatWidget = {
 };
 
 export const blogPromo = {
-  emoji: '📝',
   message: 'New posts are up on the blog!',
   cta: 'Take a look'
 };
