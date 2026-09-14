@@ -22,34 +22,22 @@ const optimizedHighlight = await getImage({ src: highlightImage, width: 900, for
 
   <div class="mt-12 grid grid-cols-1 gap-4 sm:mt-16 sm:grid-cols-2 lg:grid-cols-4">
     {focusAreas.map((area, i) => {
-      const isFeatured = i === 0;
+      const bg = i % 2 === 0 ? 'bg-[#5A2A45]' : 'bg-[#A67C90]';
       return (
-        <div
-          class={`flex min-h-[320px] flex-col justify-between p-6 ${
-            isFeatured ? 'bg-[#5A2A45] text-white' : 'border border-neutral-200 text-neutral-900'
-          }`}
-        >
+        <div class={`flex min-h-[320px] flex-col justify-between p-6 text-white ${bg}`}>
           <div class="flex items-start justify-between">
-            <p class={`font-body text-[11px] font-medium tracking-[0.12em] ${isFeatured ? 'text-white/70' : 'text-neutral-400'}`}>
+            <p class="font-body text-[11px] font-medium tracking-[0.12em] text-white/70">
               {area.index} / {area.label}
             </p>
-            <svg
-              viewBox="0 0 24 24"
-              class={`h-4 w-4 ${isFeatured ? 'text-white/80' : 'text-neutral-400'}`}
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M7 17 17 7M9 7h8v8" />
+            <svg viewBox="0 0 24 24" class="h-4 w-4 text-white/80" fill="currentColor">
+              <path d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5L12 2Z" />
             </svg>
           </div>
 
           <div>
             <svg
               viewBox="0 0 24 24"
-              class={`h-8 w-8 ${isFeatured ? 'text-white' : 'text-neutral-800'}`}
+              class="h-8 w-8 text-white"
               fill="none"
               stroke="currentColor"
               stroke-width="1.6"
@@ -58,7 +46,7 @@ const optimizedHighlight = await getImage({ src: highlightImage, width: 900, for
               set:html={area.icon}
             />
             <h3 class="mt-6 font-display text-xl font-semibold">{area.title}</h3>
-            <p class={`mt-1 font-body text-sm ${isFeatured ? 'text-white/70' : 'text-neutral-500'}`}>{area.sub}</p>
+            <p class="mt-1 font-body text-sm text-white/70">{area.sub}</p>
           </div>
         </div>
       );
