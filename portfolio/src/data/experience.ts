@@ -9,7 +9,12 @@ export const profile = {
   location: 'Bengaluru, Karnataka, India'
 };
 
-export const navLinks = ['Experience', 'Achievements', 'About'];
+export const navLinks = [
+  { label: 'Experience', href: '/#experience' },
+  { label: 'Achievements', href: '/#achievements' },
+  { label: 'About', href: '/#about' },
+  { label: 'Blog', href: '/blog' }
+];
 
 export const showcase = {
   eyebrow: 'PROJECT',
@@ -200,6 +205,7 @@ export const footerCta = {
 
 export const footerLinks = [
   { label: 'Experience', href: '/#experience' },
+  { label: 'Blog', href: '/blog' },
   { label: 'About', href: '/#about' },
   { label: 'Let’s talk', href: '/contact' }
 ];
@@ -275,4 +281,10 @@ export const chatWidget = {
     { label: 'Let’s talk', href: '/contact' }
   ],
   placeholder: 'Ask a question...'
+};
+
+export const blogPromo = {
+  emoji: '📝',
+  message: 'New posts are up on the blog!',
+  cta: 'Take a look'
 };

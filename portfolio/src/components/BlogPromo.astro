@@ -1,0 +1,57 @@
+---
+import { blogPromo } from '../data/experience';
+---
+
+<div
+  id="blog-promo"
+  class="fixed bottom-6 left-6 z-50 flex translate-y-4 items-center gap-3 border border-neutral-200 bg-white px-4 py-3 opacity-0 shadow-lg transition-all duration-300 ease-out pointer-events-none sm:bottom-8 sm:left-8"
+>
+  <span class="text-xl" aria-hidden="true">{blogPromo.emoji}</span>
+  <div>
+    <p class="font-body text-sm font-medium text-neutral-900">{blogPromo.message}</p>
+    <a href="/blog" class="mt-0.5 inline-flex items-center gap-1 font-body text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-900">
+      {blogPromo.cta}
+      <span aria-hidden="true">↗</span>
+    </a>
+  </div>
+  <button id="blog-promo-close" type="button" aria-label="Dismiss" class="ml-1 flex h-6 w-6 shrink-0 items-center justify-center text-neutral-400 transition-colors hover:text-neutral-900">
+    <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  </button>
+</div>
+
+<script>
+  const STORAGE_KEY = 'blog-promo-seen';
+  const SHOW_AFTER_MS = 4000;
+  const VISIBLE_FOR_MS = 10000;
+
+  const promo = document.getElementById('blog-promo');
+  const closeBtn = document.getElementById('blog-promo-close');
+
+  function show() {
+    if (!promo) return;
+    promo.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+  }
+
+  function hide() {
+    if (!promo) return;
+    promo.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+    sessionStorage.setItem(STORAGE_KEY, '1');
+  }
+
+  const onBlogPage = window.location.pathname.startsWith('/blog');
+  const alreadySeen = sessionStorage.getItem(STORAGE_KEY) === '1';
+
+  if (!onBlogPage && !alreadySeen && promo) {
+    const showTimer = setTimeout(() => {
+      show();
+      setTimeout(hide, VISIBLE_FOR_MS);
+    }, SHOW_AFTER_MS);
+
+    closeBtn?.addEventListener('click', () => {
+      clearTimeout(showTimer);
+      hide();
+    });
+  }
+</script>

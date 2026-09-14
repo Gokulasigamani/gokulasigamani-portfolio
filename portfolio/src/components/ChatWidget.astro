@@ -5,34 +5,38 @@ import { chatWidget } from '../data/experience';
 <div class="fixed bottom-[76px] right-6 z-50 flex flex-col items-end sm:bottom-[92px] sm:right-8">
   <div
     id="chat-panel"
-    class="mb-3 flex w-[320px] origin-bottom-right scale-95 flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white opacity-0 shadow-2xl transition-all duration-200 ease-out pointer-events-none sm:w-[360px]"
+    class="ai-border relative mb-3 flex w-[320px] origin-bottom-right scale-95 flex-col overflow-hidden border border-white/40 opacity-0 shadow-2xl transition-all duration-200 ease-out pointer-events-none sm:w-[360px]"
   >
-    <div class="flex items-center justify-between bg-[#241B26] px-4 py-4">
+    <div class="pointer-events-none absolute -left-10 -top-10 h-40 w-40 bg-[#E3A17E] opacity-40 blur-3xl"></div>
+    <div class="pointer-events-none absolute -bottom-16 -right-10 h-44 w-44 bg-[#8A6FB0] opacity-30 blur-3xl"></div>
+    <div class="pointer-events-none absolute right-1/3 top-1/2 h-32 w-32 bg-[#C9A8C4] opacity-30 blur-3xl"></div>
+
+    <div class="relative flex items-center justify-between border-b border-white/30 bg-[#241B26]/60 px-4 py-4 backdrop-blur-xl">
       <div class="flex items-center gap-3">
-        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E3A17E]/15 font-heading text-xs font-semibold text-[#E3A17E]">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center border border-white/30 bg-white/10 font-heading text-xs font-semibold text-[#E3A17E] backdrop-blur-sm">
           G
         </span>
         <div>
           <p class="font-heading text-sm font-medium text-white">{chatWidget.name}</p>
-          <p class="flex items-center gap-1.5 font-body text-[11px] text-white/50">
-            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"></span>
+          <p class="flex items-center gap-1.5 font-body text-[11px] text-white/60">
+            <span class="h-1.5 w-1.5 shrink-0 bg-emerald-400"></span>
             {chatWidget.status}
           </p>
         </div>
       </div>
-      <button id="chat-close" type="button" aria-label="Close chat" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white">
+      <button id="chat-close" type="button" aria-label="Close chat" class="flex h-8 w-8 shrink-0 items-center justify-center text-white/60 transition-colors hover:bg-white/10 hover:text-white">
         <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 6l12 12M18 6 6 18" />
         </svg>
       </button>
     </div>
 
-    <div id="chat-messages" class="max-h-80 space-y-3 overflow-y-auto bg-neutral-50/50 px-4 py-4">
+    <div id="chat-messages" class="relative max-h-80 space-y-3 overflow-y-auto bg-white/10 px-4 py-4 backdrop-blur-xl">
       <div class="flex items-start gap-2.5">
-        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8A5A3C]/10 font-heading text-[10px] font-semibold text-[#8A5A3C]">
+        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border border-white/40 bg-white/30 font-heading text-[10px] font-semibold text-[#8A5A3C] backdrop-blur-sm">
           G
         </span>
-        <p class="max-w-[80%] rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-700 shadow-sm">
+        <p class="max-w-[80%] border border-white/50 bg-white/60 px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-800 shadow-sm backdrop-blur-md">
           {chatWidget.greeting}
         </p>
       </div>
@@ -41,7 +45,7 @@ import { chatWidget } from '../data/experience';
         {chatWidget.quickLinks.map((link) => (
           <a
             href={link.href}
-            class="rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 font-body text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
+            class="border border-white/50 bg-white/30 px-3.5 py-1.5 font-body text-xs font-medium text-neutral-800 backdrop-blur-sm transition-colors hover:bg-white/50"
           >
             {link.label}
           </a>
@@ -49,19 +53,21 @@ import { chatWidget } from '../data/experience';
       </div>
     </div>
 
-    <form id="chat-form" class="flex items-center gap-2 border-t border-neutral-200 bg-white p-3">
-      <input
-        type="text"
-        name="message"
-        placeholder={chatWidget.placeholder}
-        autocomplete="off"
-        required
-        class="min-w-0 flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2.5 font-body text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:outline-none"
-      />
+    <form id="chat-form" class="relative flex items-center gap-2 border-t border-white/30 bg-white/20 p-3 backdrop-blur-xl">
+      <div class="ai-border relative min-w-0 flex-1">
+        <input
+          type="text"
+          name="message"
+          placeholder={chatWidget.placeholder}
+          autocomplete="off"
+          required
+          class="w-full border border-white/40 bg-white/40 px-4 py-2.5 font-body text-sm text-neutral-900 placeholder:text-neutral-500 backdrop-blur-sm focus:border-white/70 focus:bg-white/60 focus:outline-none"
+        />
+      </div>
       <button
         type="submit"
         aria-label="Send message"
-        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#241B26] text-white transition-colors hover:bg-[#3A2C3F]"
+        class="ai-border relative flex h-10 w-10 shrink-0 items-center justify-center border border-white/20 bg-[#241B26]/90 text-white backdrop-blur-sm transition-colors hover:bg-[#241B26]"
       >
         <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M5 12h14M13 6l6 6-6 6" />
@@ -75,16 +81,76 @@ import { chatWidget } from '../data/experience';
     type="button"
     aria-label="Open Gokul AI chat"
     aria-expanded="false"
-    class="relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-[#241B26] text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95"
+    class="ai-border relative flex h-12 w-12 cursor-pointer items-center justify-center border border-white/30 bg-[#241B26]/75 text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:border-white/50 hover:bg-[#241B26]/90 active:scale-95"
   >
-    <svg id="chat-icon-open" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <svg id="chat-icon-open" viewBox="0 0 24 24" class="h-4 w-4 text-[#E3A17E]" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 5h16v10H8l-4 4V5Z" />
     </svg>
-    <svg id="chat-icon-close" viewBox="0 0 24 24" class="absolute inset-0 m-auto h-5 w-5 opacity-0 transition-opacity duration-200" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <svg id="chat-icon-close" viewBox="0 0 24 24" class="absolute inset-0 m-auto h-4 w-4 opacity-0 transition-opacity duration-200" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 6l12 12M18 6 6 18" />
     </svg>
   </button>
 </div>
+
+<style>
+  @property --chat-border-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+
+  .ai-border {
+    --chat-border-angle: 0deg;
+  }
+
+  .ai-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1.5px;
+    background: conic-gradient(
+      from var(--chat-border-angle),
+      #e3a17e,
+      #c9a8c4,
+      #8a6fb0,
+      #e3a17e
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: chat-border-rotate 4s linear infinite;
+  }
+
+  @keyframes chat-border-rotate {
+    to {
+      --chat-border-angle: 360deg;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ai-border::before {
+      animation: none;
+    }
+  }
+
+  #chat-messages {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(138, 90, 60, 0.35) transparent;
+  }
+
+  #chat-messages::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  #chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(138, 90, 60, 0.35);
+  }
+</style>
 
 <script>
   type ChatMessage = { role: 'user' | 'assistant'; content: string };
@@ -131,12 +197,12 @@ import { chatWidget } from '../data/experience';
   function addMessage(role: 'user' | 'assistant', content: string) {
     if (!messagesEl) return;
     const wrapper = document.createElement('div');
-    wrapper.className = role === 'user' ? 'flex justify-end' : 'flex items-start gap-2.5';
+    wrapper.className = role === 'user' ? 'relative flex justify-end' : 'relative flex items-start gap-2.5';
 
     if (role === 'assistant') {
       const avatar = document.createElement('span');
       avatar.className =
-        'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8A5A3C]/10 font-heading text-[10px] font-semibold text-[#8A5A3C]';
+        'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border border-white/40 bg-white/30 font-heading text-[10px] font-semibold text-[#8A5A3C] backdrop-blur-sm';
       avatar.textContent = 'G';
       wrapper.appendChild(avatar);
     }
@@ -144,8 +210,8 @@ import { chatWidget } from '../data/experience';
     const bubble = document.createElement('p');
     bubble.className =
       role === 'user'
-        ? 'max-w-[80%] rounded-2xl rounded-tr-sm bg-[#241B26] px-3.5 py-2.5 font-body text-sm leading-relaxed text-white'
-        : 'max-w-[80%] rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-700 shadow-sm';
+        ? 'max-w-[80%] border border-white/20 bg-[#241B26]/80 px-3.5 py-2.5 font-body text-sm leading-relaxed text-white backdrop-blur-md'
+        : 'max-w-[80%] border border-white/50 bg-white/60 px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-800 shadow-sm backdrop-blur-md';
     bubble.textContent = content;
     wrapper.appendChild(bubble);
 
@@ -159,11 +225,11 @@ import { chatWidget } from '../data/experience';
     wrapper.id = 'chat-typing';
     wrapper.className = 'flex items-start gap-2.5';
     wrapper.innerHTML = `
-      <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8A5A3C]/10 font-heading text-[10px] font-semibold text-[#8A5A3C]">G</span>
-      <span class="flex items-center gap-1 rounded-2xl rounded-tl-sm bg-white px-3.5 py-3 shadow-sm">
-        <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400" style="animation-delay:0ms"></span>
-        <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400" style="animation-delay:150ms"></span>
-        <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400" style="animation-delay:300ms"></span>
+      <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border border-white/40 bg-white/30 font-heading text-[10px] font-semibold text-[#8A5A3C] backdrop-blur-sm">G</span>
+      <span class="flex items-center gap-1 border border-white/50 bg-white/60 px-3.5 py-3 shadow-sm backdrop-blur-md">
+        <span class="h-1.5 w-1.5 animate-bounce bg-neutral-500" style="animation-delay:0ms"></span>
+        <span class="h-1.5 w-1.5 animate-bounce bg-neutral-500" style="animation-delay:150ms"></span>
+        <span class="h-1.5 w-1.5 animate-bounce bg-neutral-500" style="animation-delay:300ms"></span>
       </span>
     `;
     messagesEl.appendChild(wrapper);

@@ -16,15 +16,26 @@ import logo from '../assets/images/logo.png';
     <nav class="hidden items-center gap-9 md:flex">
       {navLinks.map((link) => (
         <a
-          href={`/#${link.toLowerCase()}`}
+          href={link.href}
           class="font-body text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
         >
-          {link}
+          {link.label}
         </a>
       ))}
     </nav>
 
     <div class="flex items-center gap-3 sm:gap-4">
+      <a
+        href="/dashboard"
+        aria-label="Login"
+        class="hidden h-10 w-10 shrink-0 items-center justify-center border border-neutral-200 text-neutral-700 transition-colors hover:border-neutral-400 sm:flex"
+      >
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5 20c1.3-4 4.2-6 7-6s5.7 2 7 6" />
+        </svg>
+      </a>
+
       <a
         href="/contact"
         class="hidden items-center gap-1.5 bg-neutral-900 px-5 py-2.5 font-body text-sm font-medium text-white transition-colors hover:bg-neutral-700 sm:inline-flex"
@@ -47,12 +58,18 @@ import logo from '../assets/images/logo.png';
         <div class="absolute right-0 top-full z-50 mt-2 w-56 border border-neutral-200 bg-white py-2 shadow-lg">
           {navLinks.map((link) => (
             <a
-              href={`/#${link.toLowerCase()}`}
+              href={link.href}
               class="block px-4 py-2.5 font-body text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
             >
-              {link}
+              {link.label}
             </a>
           ))}
+          <a
+            href="/dashboard"
+            class="block border-t border-neutral-100 px-4 py-2.5 font-body text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+          >
+            Login
+          </a>
           <a
             href="/contact"
             class="block border-t border-neutral-100 px-4 py-2.5 font-body text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50"

@@ -1,0 +1,123 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import { isAuthenticated } from '../lib/auth';
+import { getAllPostsForAdmin } from '../lib/db';
+
+const authed = isAuthenticated(Astro.cookies);
+const posts = authed ? await getAllPostsForAdmin() : [];
+---
+
+<Layout title="Dashboard | Gokulasigamani N" description="Admin dashboard.">
+	{!authed ? (
+		<section class="mx-auto flex min-h-[70vh] max-w-sm flex-col items-center justify-center px-4 text-center">
+			<p class="font-body text-xs font-medium tracking-[0.15em] text-neutral-400">10 / MEMBERS AREA</p>
+			<h1 class="mt-4 font-heading text-3xl font-medium text-neutral-900">Login</h1>
+			<form id="login-form" class="mt-8 flex w-full flex-col gap-3">
+				<input
+					type="password"
+					id="password"
+					name="password"
+					placeholder="Password"
+					required
+					autocomplete="current-password"
+					class="border border-neutral-200 px-4 py-3 font-body text-sm text-neutral-900 focus:border-neutral-400 focus:outline-none"
+				/>
+				<button type="submit" class="bg-neutral-900 px-4 py-3 font-body text-sm font-medium text-white transition-colors hover:bg-neutral-700">
+					Log in
+				</button>
+				<p id="login-error" class="hidden font-body text-xs text-red-600"></p>
+			</form>
+		</section>
+	) : (
+		<section class="mx-auto max-w-[900px] px-4 py-16 sm:px-8">
+			<div class="flex flex-wrap items-center justify-between gap-4">
+				<h1 class="font-heading text-2xl font-medium text-neutral-900">Posts</h1>
+				<div class="flex items-center gap-3">
+					<a href="/dashboard/new" class="bg-neutral-900 px-4 py-2.5 font-body text-sm font-medium text-white transition-colors hover:bg-neutral-700">
+						New post
+					</a>
+					<button id="seed-btn" type="button" class="border border-neutral-200 px-4 py-2.5 font-body text-sm text-neutral-700 transition-colors hover:border-neutral-400">
+						Seed example posts
+					</button>
+					<button id="logout-btn" type="button" class="border border-neutral-200 px-4 py-2.5 font-body text-sm text-neutral-700 transition-colors hover:border-neutral-400">
+						Log out
+					</button>
+				</div>
+			</div>
+
+			<div class="mt-8 divide-y divide-neutral-200 border-t border-neutral-200">
+				{posts.map((post) => (
+					<div class="flex flex-wrap items-center justify-between gap-4 py-4">
+						<div>
+							<p class="font-heading text-base font-medium text-neutral-900">{post.title}</p>
+							<p class="mt-1 font-body text-xs text-neutral-400">
+								{post.published ? 'Published' : 'Draft'} · /blog/{post.slug}
+							</p>
+						</div>
+						<div class="flex shrink-0 items-center gap-4">
+							<a href={`/dashboard/edit/${post.id}`} class="font-body text-sm text-neutral-600 transition-colors hover:text-neutral-900">
+								Edit
+							</a>
+							<button class="delete-btn font-body text-sm text-red-600 transition-colors hover:text-red-800" data-id={post.id}>
+								Delete
+							</button>
+						</div>
+					</div>
+				))}
+				{posts.length === 0 && <p class="py-8 font-body text-sm text-neutral-400">No posts yet.</p>}
+			</div>
+		</section>
+	)}
+</Layout>
+
+<script>
+  const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
+
+  loginForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const password = (document.getElementById('password') as HTMLInputElement).value;
+    const errorEl = document.getElementById('login-error');
+
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+
+    if (res.ok) {
+      window.location.href = '/dashboard';
+    } else {
+      errorEl?.classList.remove('hidden');
+      if (errorEl) errorEl.textContent = 'Incorrect password.';
+    }
+  });
+
+  document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    await fetch('/api/admin/logout', { method: 'POST' });
+    window.location.href = '/dashboard';
+  });
+
+  document.getElementById('seed-btn')?.addEventListener('click', async (event) => {
+    const btn = event.currentTarget as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Seeding...';
+    const res = await fetch('/api/admin/seed', { method: 'POST' });
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Seed example posts';
+    }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.delete-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this post? This cannot be undone.')) return;
+      const id = btn.dataset.id;
+      const res = await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' });
+      if (res.ok) window.location.reload();
+    });
+  });
+</script>

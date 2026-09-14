@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import Layout from '../layouts/Layout.astro';
 import Hero from '../components/Hero.astro';
 import Experience from '../components/Experience.astro';
@@ -7,6 +9,7 @@ import Journey from '../components/Journey.astro';
 import About from '../components/About.astro';
 import Achievements from '../components/Achievements.astro';
 import Venture from '../components/Venture.astro';
+import BlogTeaser from '../components/BlogTeaser.astro';
 ---
 
 <Layout
@@ -20,4 +23,5 @@ import Venture from '../components/Venture.astro';
 	<Venture />
 	<About />
 	<Achievements />
+	<BlogTeaser />
 </Layout>

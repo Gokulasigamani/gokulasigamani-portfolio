@@ -4,13 +4,18 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import ScrollTop from '../components/ScrollTop.astro';
 import ChatWidget from '../components/ChatWidget.astro';
+import BlogPromo from '../components/BlogPromo.astro';
 
 interface Props {
   title: string;
   description: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
 }
 
-const { title, description } = Astro.props;
+const { title, description, ogImage, ogType = 'website' } = Astro.props;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
+const resolvedOgImage = ogImage ? new URL(ogImage, canonicalUrl) : undefined;
 ---
 
 <html lang="en">
@@ -22,6 +27,18 @@ const { title, description } = Astro.props;
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		<link rel="canonical" href={canonicalUrl} />
+
+		<meta property="og:type" content={ogType} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonicalUrl} />
+		{resolvedOgImage && <meta property="og:image" content={resolvedOgImage} />}
+
+		<meta name="twitter:card" content={resolvedOgImage ? 'summary_large_image' : 'summary'} />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		{resolvedOgImage && <meta name="twitter:image" content={resolvedOgImage} />}
 	</head>
 	<body class="overflow-x-hidden bg-white">
 		<Header />
@@ -31,5 +48,6 @@ const { title, description } = Astro.props;
 		<Footer />
 		<ScrollTop />
 		<ChatWidget />
+		<BlogPromo />
 	</body>
 </html>

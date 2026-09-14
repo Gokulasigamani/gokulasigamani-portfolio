@@ -1,0 +1,61 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import { getPublishedPosts } from '../../lib/db';
+import { estimateReadingTime, formatPostDate } from '../../utils/reading-time';
+
+const posts = await getPublishedPosts();
+---
+
+<Layout
+	title="Blog | Gokulasigamani N"
+	description="Notes on full-stack engineering, cloud infrastructure, and building with AI, from Gokulasigamani N."
+>
+	<section class="mx-auto max-w-[1440px] px-4 py-16 sm:px-8 sm:py-20 lg:px-12">
+		<p class="font-body text-xs font-medium tracking-[0.15em] text-neutral-400">11 / FROM THE BLOG</p>
+		<h1 class="mt-4 max-w-xl font-heading text-[clamp(2.25rem,5vw,3.5rem)] font-medium leading-[1.05] text-neutral-900">
+			Notes on building things.
+		</h1>
+		<p class="mt-4 max-w-md font-body text-sm leading-relaxed text-neutral-500">
+			Full-stack engineering, cloud infrastructure, and lessons from building with AI, written up as I go.
+		</p>
+
+		<div class="mt-12 grid grid-cols-1 gap-6 sm:mt-16 sm:grid-cols-2 lg:grid-cols-3">
+			{posts.map((post) => (
+				<a href={`/blog/${post.slug}`} class="group flex flex-col border border-neutral-200 transition-colors hover:border-neutral-400">
+					<div class="aspect-[16/10] w-full overflow-hidden">
+						<img
+							src={post.cover_image}
+							alt={post.title}
+							loading="lazy"
+							class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+						/>
+					</div>
+					<div class="flex flex-1 flex-col p-5">
+						<p class="font-body text-[11px] font-medium tracking-[0.1em] text-neutral-400">
+							{formatPostDate(new Date(post.published_at ?? post.created_at))} · {estimateReadingTime(post.body)} min read
+						</p>
+						<h2 class="mt-2 font-heading text-lg font-medium leading-snug text-neutral-900">
+							{post.title}
+						</h2>
+						<p class="mt-2 flex-1 font-body text-sm leading-relaxed text-neutral-500">
+							{post.description}
+						</p>
+						<div class="mt-4 flex flex-wrap gap-2">
+							{post.tags.map((tag) => (
+								<span class="border border-neutral-200 px-2.5 py-1 font-body text-[11px] font-medium text-neutral-600">
+									{tag}
+								</span>
+							))}
+						</div>
+					</div>
+				</a>
+			))}
+		</div>
+
+		{posts.length === 0 && (
+			<p class="mt-12 font-body text-sm text-neutral-400">No posts published yet, check back soon.</p>
+		)}
+	</section>
+</Layout>
