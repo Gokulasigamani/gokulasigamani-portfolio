@@ -264,3 +264,15 @@ export const venture = {
   url: 'https://www.sunajo.com',
   urlLabel: 'sunajo.com'
 };
+
+export const chatWidget = {
+  name: 'Gokul AI',
+  status: 'Online · AI Assistant',
+  greeting: 'Hey! I’m Gokul AI. Ask me about his work, skills, or experience.',
+  quickLinks: [
+    { label: 'View my work', href: '/#experience' },
+    { label: 'See achievements', href: '/#achievements' },
+    { label: 'Let’s talk', href: '/contact' }
+  ],
+  placeholder: 'Ask a question...'
+};

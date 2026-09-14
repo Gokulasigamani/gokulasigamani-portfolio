@@ -1,0 +1,213 @@
+---
+import { chatWidget } from '../data/experience';
+---
+
+<div class="fixed bottom-[76px] right-6 z-50 flex flex-col items-end sm:bottom-[92px] sm:right-8">
+  <div
+    id="chat-panel"
+    class="mb-3 flex w-[320px] origin-bottom-right scale-95 flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white opacity-0 shadow-2xl transition-all duration-200 ease-out pointer-events-none sm:w-[360px]"
+  >
+    <div class="flex items-center justify-between bg-[#241B26] px-4 py-4">
+      <div class="flex items-center gap-3">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E3A17E]/15 font-heading text-xs font-semibold text-[#E3A17E]">
+          G
+        </span>
+        <div>
+          <p class="font-heading text-sm font-medium text-white">{chatWidget.name}</p>
+          <p class="flex items-center gap-1.5 font-body text-[11px] text-white/50">
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"></span>
+            {chatWidget.status}
+          </p>
+        </div>
+      </div>
+      <button id="chat-close" type="button" aria-label="Close chat" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white">
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </button>
+    </div>
+
+    <div id="chat-messages" class="max-h-80 space-y-3 overflow-y-auto bg-neutral-50/50 px-4 py-4">
+      <div class="flex items-start gap-2.5">
+        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8A5A3C]/10 font-heading text-[10px] font-semibold text-[#8A5A3C]">
+          G
+        </span>
+        <p class="max-w-[80%] rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-700 shadow-sm">
+          {chatWidget.greeting}
+        </p>
+      </div>
+
+      <div id="chat-quick-links" class="flex flex-wrap gap-2 pl-[38px]">
+        {chatWidget.quickLinks.map((link) => (
+          <a
+            href={link.href}
+            class="rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 font-body text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
+          >
+            {link.label}
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <form id="chat-form" class="flex items-center gap-2 border-t border-neutral-200 bg-white p-3">
+      <input
+        type="text"
+        name="message"
+        placeholder={chatWidget.placeholder}
+        autocomplete="off"
+        required
+        class="min-w-0 flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2.5 font-body text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:outline-none"
+      />
+      <button
+        type="submit"
+        aria-label="Send message"
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#241B26] text-white transition-colors hover:bg-[#3A2C3F]"
+      >
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <button
+    id="chat-toggle"
+    type="button"
+    aria-label="Open Gokul AI chat"
+    aria-expanded="false"
+    class="relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-[#241B26] text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95"
+  >
+    <svg id="chat-icon-open" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 5h16v10H8l-4 4V5Z" />
+    </svg>
+    <svg id="chat-icon-close" viewBox="0 0 24 24" class="absolute inset-0 m-auto h-5 w-5 opacity-0 transition-opacity duration-200" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  </button>
+</div>
+
+<script>
+  type ChatMessage = { role: 'user' | 'assistant'; content: string };
+
+  const toggle = document.getElementById('chat-toggle');
+  const panel = document.getElementById('chat-panel');
+  const closeBtn = document.getElementById('chat-close');
+  const iconOpen = document.getElementById('chat-icon-open');
+  const iconClose = document.getElementById('chat-icon-close');
+  const form = document.getElementById('chat-form') as HTMLFormElement | null;
+  const messagesEl = document.getElementById('chat-messages');
+  const quickLinksEl = document.getElementById('chat-quick-links');
+
+  const history: ChatMessage[] = [];
+
+  function setOpen(open: boolean) {
+    if (!panel || !toggle) return;
+    panel.classList.toggle('opacity-0', !open);
+    panel.classList.toggle('scale-95', !open);
+    panel.classList.toggle('pointer-events-none', !open);
+    iconOpen?.classList.toggle('opacity-0', open);
+    iconClose?.classList.toggle('opacity-0', !open);
+    toggle.setAttribute('aria-expanded', String(open));
+  }
+
+  toggle?.addEventListener('click', () => {
+    setOpen(panel?.classList.contains('opacity-0') ?? true);
+  });
+
+  closeBtn?.addEventListener('click', () => setOpen(false));
+
+  document.addEventListener('click', (event) => {
+    const target = event.target as Node;
+    if (!panel || panel.classList.contains('opacity-0')) return;
+    if (!panel.contains(target) && !toggle?.contains(target)) {
+      setOpen(false);
+    }
+  });
+
+  function scrollToBottom() {
+    if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function addMessage(role: 'user' | 'assistant', content: string) {
+    if (!messagesEl) return;
+    const wrapper = document.createElement('div');
+    wrapper.className = role === 'user' ? 'flex justify-end' : 'flex items-start gap-2.5';
+
+    if (role === 'assistant') {
+      const avatar = document.createElement('span');
+      avatar.className =
+        'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8A5A3C]/10 font-heading text-[10px] font-semibold text-[#8A5A3C]';
+      avatar.textContent = 'G';
+      wrapper.appendChild(avatar);
+    }
+
+    const bubble = document.createElement('p');
+    bubble.className =
+      role === 'user'
+        ? 'max-w-[80%] rounded-2xl rounded-tr-sm bg-[#241B26] px-3.5 py-2.5 font-body text-sm leading-relaxed text-white'
+        : 'max-w-[80%] rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-700 shadow-sm';
+    bubble.textContent = content;
+    wrapper.appendChild(bubble);
+
+    messagesEl.appendChild(wrapper);
+    scrollToBottom();
+  }
+
+  function addTyping() {
+    if (!messagesEl) return;
+    const wrapper = document.createElement('div');
+    wrapper.id = 'chat-typing';
+    wrapper.className = 'flex items-start gap-2.5';
+    wrapper.innerHTML = `
+      <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8A5A3C]/10 font-heading text-[10px] font-semibold text-[#8A5A3C]">G</span>
+      <span class="flex items-center gap-1 rounded-2xl rounded-tl-sm bg-white px-3.5 py-3 shadow-sm">
+        <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400" style="animation-delay:0ms"></span>
+        <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400" style="animation-delay:150ms"></span>
+        <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400" style="animation-delay:300ms"></span>
+      </span>
+    `;
+    messagesEl.appendChild(wrapper);
+    scrollToBottom();
+  }
+
+  function removeTyping() {
+    document.getElementById('chat-typing')?.remove();
+  }
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const input = form.querySelector('input[name="message"]') as HTMLInputElement | null;
+    const message = input?.value.trim();
+    if (!message || !input) return;
+
+    quickLinksEl?.classList.add('hidden');
+    addMessage('user', message);
+    history.push({ role: 'user', content: message });
+    input.value = '';
+    input.disabled = true;
+    addTyping();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history })
+      });
+      const data = await res.json();
+      removeTyping();
+
+      if (!res.ok) {
+        addMessage('assistant', data.error || 'Something went wrong. Please try again.');
+      } else {
+        addMessage('assistant', data.reply);
+        history.push({ role: 'assistant', content: data.reply });
+      }
+    } catch {
+      removeTyping();
+      addMessage('assistant', 'Something went wrong connecting to the assistant. Please try again or use the contact page.');
+    } finally {
+      input.disabled = false;
+      input.focus();
+    }
+  });
+</script>
