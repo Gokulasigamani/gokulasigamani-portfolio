@@ -1,0 +1,114 @@
+---
+import { getImage } from 'astro:assets';
+import { aboutIntro, aboutCraft, aboutTalk, aboutCare, aboutPhoto, aboutStrip } from '../data/experience';
+import profileImage from '../assets/images/profile.png';
+
+const optimizedProfile = await getImage({ src: profileImage, width: 900, format: 'webp', quality: 82 });
+---
+
+<section id="about" class="mx-auto max-w-[1440px] px-4 py-16 sm:px-8 sm:py-20 lg:px-12">
+  <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_1.6fr] lg:gap-12">
+    <div class="flex flex-col justify-between">
+      <div>
+        <p class="flex items-center gap-2 font-body text-[11px] font-medium tracking-[0.1em] text-neutral-400">
+          <span class="h-1 w-1 shrink-0 bg-[#8A5A3C]"></span>
+          {aboutIntro.label}
+        </p>
+        <h2 class="mt-4 font-heading text-[clamp(2rem,5vw,3.25rem)] font-medium leading-[1.05] text-neutral-900">
+          <span class="block">{aboutIntro.heading[0]}</span>
+          <span class="block text-[#8A5A3C]">{aboutIntro.heading[1]}</span>
+        </h2>
+
+        <div class="mt-6 flex items-center gap-4">
+          <p class="font-body text-sm leading-relaxed text-neutral-500">
+            {aboutIntro.note[0]}<br />
+            {aboutIntro.note[1]}
+          </p>
+          <a
+            href="mailto:gokulsusela@gmail.com"
+            aria-label="Get in touch"
+            class="flex h-11 w-11 shrink-0 items-center justify-center border border-neutral-300 text-neutral-700 transition-colors hover:border-neutral-500"
+          >
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 17 17 7M9 7h8v8" />
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <p class="mt-10 font-body text-[11px] font-medium tracking-[0.1em] text-neutral-400 lg:mt-0">
+        {aboutIntro.footerLabel}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div class="relative aspect-square overflow-hidden">
+        <div
+          class="h-full w-full bg-cover bg-center"
+          style={`background-image: url('${optimizedProfile.src}'); background-position: 50% 10%;`}
+        >
+        </div>
+        <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent"></div>
+        <p class="absolute left-3 top-3 border border-white/40 bg-black/20 px-2 py-1 font-body text-[10px] font-medium tracking-[0.08em] text-white backdrop-blur-sm">
+          {aboutPhoto.tag}
+        </p>
+        <p class="absolute bottom-3 left-3 font-body text-[10px] font-medium tracking-[0.08em] text-white">
+          {aboutPhoto.caption}
+        </p>
+      </div>
+
+      <div class="flex aspect-square flex-col justify-between bg-[#241B26] p-6">
+        <div class="flex items-start justify-between">
+          <p class="font-body text-[10px] font-medium tracking-[0.08em] text-white/60">{aboutCraft.eyebrow}</p>
+          <svg viewBox="0 0 24 24" class="h-4 w-4 text-white/70" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17 17 7M9 7h8v8" />
+          </svg>
+        </div>
+        <svg viewBox="0 0 24 24" class="h-9 w-9 text-[#E3A17E]" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" set:html={aboutCraft.icon} />
+        <div>
+          <h3 class="font-heading text-xl font-medium leading-tight text-white">
+            <span class="block">{aboutCraft.heading[0]}</span>
+            <span class="block">{aboutCraft.heading[1]}</span>
+          </h3>
+          <a href="#experience" class="mt-1 inline-block font-body text-xs text-white/60 transition-colors hover:text-white">
+            {aboutCraft.sub}
+          </a>
+        </div>
+      </div>
+
+      <div class="flex min-h-[140px] flex-col justify-between bg-[#F1DACB] p-6">
+        <div class="flex items-start justify-between">
+          <p class="font-body text-[10px] font-medium tracking-[0.08em] text-[#8A5A3C]">{aboutTalk.eyebrow}</p>
+        </div>
+        <div class="flex items-end justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <svg viewBox="0 0 24 24" class="h-4 w-4 shrink-0 text-[#8A5A3C]" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" set:html={aboutTalk.icon} />
+            <a href="mailto:gokulsusela@gmail.com" class="font-heading text-lg font-medium text-neutral-900">
+              {aboutTalk.title}
+            </a>
+          </div>
+          <span aria-hidden="true" class="font-body text-neutral-500">↗</span>
+        </div>
+      </div>
+
+      <div class="flex min-h-[140px] flex-col justify-between border border-neutral-200 p-6">
+        <div class="flex items-center gap-2">
+          <svg viewBox="0 0 24 24" class="h-4 w-4 shrink-0 text-neutral-500" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" set:html={aboutCare.icon} />
+          <h3 class="font-heading text-lg font-medium leading-tight text-neutral-900">
+            {aboutCare.heading[0]} {aboutCare.heading[1]}
+          </h3>
+        </div>
+        <p class="font-body text-[10px] font-medium tracking-[0.08em] text-neutral-400">{aboutCare.caption}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 bg-[#F1DACB] px-6 py-5">
+    {aboutStrip.map((line, i) => (
+      <>
+        {i > 0 && <span aria-hidden="true" class="text-[#8A5A3C]/50">◇</span>}
+        <p class="font-body text-[11px] font-medium tracking-[0.08em] text-[#8A5A3C]">{line}</p>
+      </>
+    ))}
+  </div>
+</section>

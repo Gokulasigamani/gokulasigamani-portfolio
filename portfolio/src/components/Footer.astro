@@ -1,0 +1,91 @@
+---
+import { Image } from 'astro:assets';
+import { footerCta, footerLinks, footerMeta } from '../data/experience';
+import logo from '../assets/images/logo.png';
+---
+
+<footer>
+  <div class="mx-auto max-w-[1440px] px-4 pt-16 sm:px-8 sm:pt-20 lg:px-12">
+    <div class="grid grid-cols-1 sm:grid-cols-2">
+      <div class="flex flex-col justify-between gap-10 bg-[#241B26] px-6 py-12 sm:px-10 sm:py-16">
+        <div>
+          <p class="font-body text-[11px] font-medium tracking-[0.1em] text-white/50">{footerCta.eyebrow}</p>
+          <h2 class="mt-4 font-heading text-[clamp(2rem,5vw,3rem)] font-medium leading-[1.05] text-white">
+            <span class="block">{footerCta.headingPrefix}</span>
+            <span class="block underline decoration-2 underline-offset-4">{footerCta.headingAccent}</span>
+          </h2>
+          <p class="mt-5 max-w-xs font-body text-sm leading-relaxed text-white/60">{footerCta.note}</p>
+        </div>
+
+        <a
+          href="/contact"
+          class="inline-flex w-fit items-center gap-2 bg-white px-5 py-3 font-body text-sm font-medium text-neutral-900 transition-colors hover:bg-white/90"
+        >
+          {footerCta.cta}
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+
+      <div class="flex flex-col justify-between gap-10 bg-[#F1DACB] px-6 py-12 sm:px-10 sm:py-16">
+        <svg
+          viewBox="0 0 24 24"
+          class="h-8 w-8 text-[#8A5A3C]"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          set:html={footerCta.icon}
+        />
+
+        <div>
+          <h3 class="font-heading text-2xl font-semibold leading-tight text-neutral-900 sm:text-3xl">
+            <span class="block">{footerCta.panelHeading[0]}</span>
+            <span class="block">{footerCta.panelHeading[1]}</span>
+          </h3>
+          <div class="mt-4 flex items-center gap-2 border-t border-[#8A5A3C]/25 pt-4">
+            <span aria-hidden="true" class="text-[#8A5A3C]">+</span>
+            <p class="font-body text-[11px] font-medium tracking-[0.08em] text-[#8A5A3C]">{footerCta.panelNote}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 py-6 sm:px-8 lg:px-12">
+    <div class="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+      <a href="/" aria-label="Back to top">
+        <Image src={logo} alt="Gokulasigamani" class="h-6 w-auto" loading="lazy" />
+      </a>
+
+      <p class="font-body text-[11px] font-medium tracking-[0.08em] text-neutral-400">
+        {footerMeta.tagline}
+      </p>
+
+      <nav class="flex flex-wrap items-center gap-x-6 gap-y-2">
+        {footerLinks.map((link) => (
+          <a
+            href={link.href}
+            class="font-body text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
+    </div>
+
+    <div class="mt-6 flex flex-col gap-3 border-t border-neutral-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <p class="font-body text-[11px] text-neutral-400">{footerMeta.copyright}</p>
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <p class="font-body text-[11px] font-medium tracking-[0.08em] text-neutral-400">{footerMeta.strip}</p>
+        <a
+          href="/"
+          class="inline-flex items-center gap-1.5 font-body text-[11px] font-medium text-neutral-600 transition-colors hover:text-neutral-900"
+        >
+          {footerMeta.backToTop}
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>

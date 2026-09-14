@@ -1,0 +1,64 @@
+---
+---
+
+<button
+  id="scroll-top"
+  aria-label="Back to top"
+  type="button"
+  class="group fixed bottom-6 right-6 z-50 flex h-12 w-12 cursor-pointer items-center justify-center border border-neutral-200 bg-white/90 text-neutral-700 opacity-0 shadow-sm backdrop-blur transition-all duration-300 pointer-events-none hover:border-neutral-400 hover:bg-white hover:shadow-md active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 sm:bottom-8 sm:right-8"
+>
+  <svg class="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <rect
+      id="scroll-progress"
+      x="1"
+      y="1"
+      width="98"
+      height="98"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      pathLength="100"
+      stroke-dasharray="100"
+      stroke-dashoffset="100"
+      class="text-neutral-900 transition-[stroke-dashoffset] duration-150 ease-linear"
+    />
+  </svg>
+  <svg
+    viewBox="0 0 24 24"
+    class="relative h-4 w-4 transition-transform duration-200 ease-out group-hover:-translate-y-0.5"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+</button>
+
+<script>
+  const button = document.getElementById('scroll-top');
+  const progress = document.getElementById('scroll-progress');
+
+  function updateScrollTop() {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docHeight > 0 ? Math.min(Math.max(scrollTop / docHeight, 0), 1) : 0;
+
+    progress?.setAttribute('stroke-dashoffset', String(100 - pct * 100));
+
+    if (!button) return;
+    if (scrollTop > 400) {
+      button.classList.remove('opacity-0', 'pointer-events-none');
+    } else {
+      button.classList.add('opacity-0', 'pointer-events-none');
+    }
+  }
+
+  window.addEventListener('scroll', updateScrollTop, { passive: true });
+  updateScrollTop();
+
+  button?.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>

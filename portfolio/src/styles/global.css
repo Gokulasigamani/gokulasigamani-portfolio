@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+/* Heading: Raleway. Body: DM Sans. */
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/raleway/500.css";
+@import "@fontsource/raleway/600.css";
+
+@theme {
+  --font-heading: "Raleway", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+  --font-display: "Raleway", sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+}
+
+/* Accent / highlighted text, same family, heavier weight */
+strong,
+mark,
+.text-highlight {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}

@@ -1,0 +1,50 @@
+---
+import { philosophy } from '../data/experience';
+---
+
+<div class="bg-[#241B26]">
+  <section class="mx-auto max-w-[1440px] px-4 py-12 sm:px-8 sm:py-14 lg:px-12">
+    <div class="flex items-start justify-between">
+      <p class="font-body text-xs font-medium tracking-[0.15em] text-white/50">{philosophy.eyebrow}</p>
+      <svg
+        viewBox="0 0 24 24"
+        class="h-6 w-6 shrink-0 text-[#E3A17E]"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M9 7 4 12l5 5M15 7l5 5-5 5" />
+      </svg>
+    </div>
+
+    <h2 class="mt-4 font-heading text-[clamp(2rem,5.5vw,3.75rem)] font-medium leading-[1.05] text-white sm:mt-5">
+      <span class="block">{philosophy.line1}</span>
+      <span class="block">
+        {philosophy.line2Prefix}<span class="text-[#C9A8C4]">{philosophy.line2Accent}</span>
+      </span>
+    </h2>
+
+    <div class="mt-6 border-t border-white/15 pt-6 sm:mt-8 sm:pt-7">
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <p class="font-heading text-3xl font-semibold leading-none text-[#E3A17E] sm:text-4xl">
+          {philosophy.mark}<sup class="text-base font-semibold sm:text-lg">+</sup>
+        </p>
+
+        <div class="flex items-end gap-6 sm:max-w-md">
+          <p class="font-body text-sm leading-relaxed text-white/60">{philosophy.note}</p>
+          <a
+            href="mailto:gokulsusela@gmail.com"
+            aria-label="Get in touch"
+            class="flex h-11 w-11 shrink-0 items-center justify-center border border-white/30 text-white transition-colors hover:border-white/70"
+          >
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 17 17 7M9 7h8v8" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

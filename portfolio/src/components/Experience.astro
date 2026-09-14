@@ -1,0 +1,101 @@
+---
+import { getImage } from 'astro:assets';
+import { focusIntro, focusAreas, focusHighlight } from '../data/experience';
+import highlightImage from '../assets/images/secon.jpg';
+
+const optimizedHighlight = await getImage({ src: highlightImage, width: 900, format: 'webp', quality: 75 });
+---
+
+<section id="experience" class="mx-auto max-w-[1440px] px-4 py-20 sm:px-8 sm:py-24 lg:px-12">
+  <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <p class="font-body text-xs font-medium tracking-[0.15em] text-neutral-400">{focusIntro.eyebrow}</p>
+      <h2 class="mt-3 font-display text-[clamp(2.25rem,6vw,3.75rem)] font-semibold leading-[1.05]">
+        <span class="block text-neutral-900">{focusIntro.heading[0]}</span>
+        <span class="block text-[#A67C90]">{focusIntro.heading[1]}</span>
+      </h2>
+    </div>
+    <p class="font-body text-sm leading-relaxed text-neutral-500 sm:max-w-[220px] sm:text-right">
+      {focusIntro.note}
+    </p>
+  </div>
+
+  <div class="mt-12 grid grid-cols-1 gap-4 sm:mt-16 sm:grid-cols-2 lg:grid-cols-4">
+    {focusAreas.map((area, i) => {
+      const isFeatured = i === 0;
+      return (
+        <div
+          class={`flex min-h-[320px] flex-col justify-between p-6 ${
+            isFeatured ? 'bg-[#5A2A45] text-white' : 'border border-neutral-200 text-neutral-900'
+          }`}
+        >
+          <div class="flex items-start justify-between">
+            <p class={`font-body text-[11px] font-medium tracking-[0.12em] ${isFeatured ? 'text-white/70' : 'text-neutral-400'}`}>
+              {area.index} / {area.label}
+            </p>
+            <svg
+              viewBox="0 0 24 24"
+              class={`h-4 w-4 ${isFeatured ? 'text-white/80' : 'text-neutral-400'}`}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M7 17 17 7M9 7h8v8" />
+            </svg>
+          </div>
+
+          <div>
+            <svg
+              viewBox="0 0 24 24"
+              class={`h-8 w-8 ${isFeatured ? 'text-white' : 'text-neutral-800'}`}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              set:html={area.icon}
+            />
+            <h3 class="mt-6 font-display text-xl font-semibold">{area.title}</h3>
+            <p class={`mt-1 font-body text-sm ${isFeatured ? 'text-white/70' : 'text-neutral-500'}`}>{area.sub}</p>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+
+  <div class="mt-4 grid grid-cols-1 overflow-hidden bg-[#F3EBEF] sm:grid-cols-[1fr_1.5fr_1fr]">
+    <div
+      class="h-56 w-full bg-cover bg-center sm:h-auto"
+      style={`background-image: url('${optimizedHighlight.src}'); background-position: 50% 50%;`}
+    >
+    </div>
+
+    <div class="px-6 py-10 sm:px-10">
+      <p class="font-body text-[11px] font-medium tracking-[0.12em] text-neutral-400">{focusHighlight.eyebrow}</p>
+      <h3 class="mt-3 font-display text-2xl font-semibold leading-tight text-neutral-900 sm:text-3xl">
+        {focusHighlight.heading[0]}<br />
+        {focusHighlight.heading[1]}
+      </h3>
+      <p class="mt-4 max-w-sm font-body text-sm leading-relaxed text-neutral-500">
+        {focusHighlight.body}
+      </p>
+      <a
+        href="mailto:gokulsusela@gmail.com"
+        class="mt-6 inline-flex items-center gap-1.5 border-b border-neutral-400 pb-0.5 font-body text-sm font-medium text-neutral-800 transition-colors hover:border-neutral-800"
+      >
+        {focusHighlight.cta}
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+
+    <div class="flex items-center justify-center px-6 pb-10 sm:justify-end sm:pr-10 sm:pb-0">
+      <p class="text-center font-display text-3xl font-semibold leading-none text-neutral-300 sm:text-right sm:text-4xl">
+        {focusHighlight.slogan[0]}
+        <br />
+        {focusHighlight.slogan[1]}
+      </p>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,68 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { contactIntro, contactChannels, contactAvailability } from '../data/experience';
+---
+
+<Layout
+	title="Contact | Gokulasigamani N"
+	description="Get in touch with Gokulasigamani N, a Full-Stack Developer specializing in the MERN stack, AWS cloud, and AI-powered automation."
+>
+	<div class="bg-[#241B26]">
+		<section class="mx-auto max-w-[1440px] px-4 pb-16 pt-16 sm:px-8 sm:pb-20 sm:pt-20 lg:px-12">
+			<div class="flex items-center justify-between">
+				<p class="font-body text-xs font-medium tracking-[0.15em] text-white/50">{contactIntro.eyebrow}</p>
+				<span class="inline-flex items-center gap-2 border border-white/15 px-3 py-1.5 font-body text-xs font-medium text-white/70">
+					<svg viewBox="0 0 24 24" class="h-3 w-3 shrink-0 text-[#E3A17E]" fill="currentColor">
+						<path d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5L12 2Z" />
+					</svg>
+					{contactIntro.status}
+				</span>
+			</div>
+
+			<h1 class="mt-6 font-heading text-[clamp(2.5rem,7vw,4.5rem)] font-medium leading-[1.05] text-white">
+				<span class="block">{contactIntro.heading[0]}</span>
+				<span class="block text-[#C9A8C4]">{contactIntro.heading[1]}</span>
+			</h1>
+			<p class="mt-5 max-w-md font-body text-sm leading-relaxed text-white/60">{contactIntro.note}</p>
+
+			<div class="mt-12 flex items-center justify-between border-t border-white/15 pt-6 sm:mt-16">
+				<p class="font-heading text-2xl font-semibold leading-none text-[#E3A17E]">
+					{contactIntro.mark}<sup class="text-sm font-semibold">+</sup>
+				</p>
+				<p class="max-w-[220px] text-right font-body text-xs leading-relaxed text-white/50">{contactIntro.markNote}</p>
+			</div>
+		</section>
+	</div>
+
+	<section class="mx-auto max-w-[1440px] px-4 py-16 sm:px-8 sm:py-20 lg:px-12">
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+			{contactChannels.map((channel) => {
+				const content = (
+					<>
+						<span class="flex h-11 w-11 items-center justify-center border border-neutral-200 text-[#8A5A3C] transition-colors group-hover:border-[#8A5A3C]">
+							<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" set:html={channel.icon} />
+						</span>
+						<p class="mt-6 font-body text-[11px] font-medium tracking-[0.1em] text-neutral-400">{channel.label}</p>
+						<p class="mt-1.5 font-heading text-lg font-medium text-neutral-900 sm:text-xl">{channel.value}</p>
+					</>
+				);
+
+				return channel.href ? (
+					<a href={channel.href} class="group flex min-h-[180px] flex-col justify-between border border-neutral-200 p-6 transition-colors hover:border-neutral-400 sm:p-8">
+						<div>{content}</div>
+						<span aria-hidden="true" class="inline-flex items-center gap-1.5 font-body text-xs font-medium text-neutral-400 transition-colors group-hover:text-neutral-900">
+							Reach out
+							<span class="transition-transform group-hover:translate-x-0.5">↗</span>
+						</span>
+					</a>
+				) : (
+					<div class="flex min-h-[180px] flex-col justify-between border border-neutral-200 p-6 sm:p-8">
+						<div>{content}</div>
+					</div>
+				);
+			})}
+		</div>
+
+		<p class="mt-8 font-body text-sm leading-relaxed text-neutral-400">{contactAvailability.note}</p>
+	</section>
+</Layout>

@@ -1,0 +1,105 @@
+---
+import { getImage } from 'astro:assets';
+import { ventureIntro, venture } from '../data/experience';
+import bgImage from '../assets/images/third.png';
+
+const optimizedBg = await getImage({ src: bgImage, width: 1600, format: 'webp', quality: 78 });
+
+const marqueeServices = [
+  ...venture.services,
+  ...venture.services,
+  ...venture.services,
+  ...venture.services
+];
+---
+
+<section class="mx-auto max-w-[1440px] px-4 py-6 sm:px-8 sm:py-8 lg:px-12">
+  <div class="relative overflow-hidden">
+    <div
+      class="absolute inset-0 bg-cover bg-center"
+      style={`background-image: url('${optimizedBg.src}');`}
+    >
+    </div>
+    <div class="pointer-events-none absolute inset-0 bg-black/50"></div>
+
+    <div class="relative px-6 py-6 sm:px-10 sm:py-8 lg:px-12 lg:py-9">
+      <div class="flex items-start justify-between gap-4">
+        <p class="font-body text-xs font-medium tracking-[0.15em] text-white/60">{ventureIntro.eyebrow}</p>
+        <a
+          href={venture.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Visit ${venture.name}`}
+          class="flex h-10 w-10 shrink-0 items-center justify-center border border-white/25 text-white transition-colors hover:border-white/60"
+        >
+          <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17 17 7M9 7h8v8" />
+          </svg>
+        </a>
+      </div>
+
+      <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center border border-[#E3A17E]/40 font-heading text-xs font-semibold text-[#E3A17E]">
+              S
+            </span>
+            <p class="font-body text-[11px] font-medium tracking-[0.2em] text-[#E3A17E]">{venture.role}</p>
+          </div>
+          <h2 class="mt-2 font-heading text-[clamp(2.25rem,6vw,4rem)] font-medium leading-[0.95] tracking-tight text-white">
+            {venture.name}
+          </h2>
+          <p class="mt-2 max-w-md font-body text-sm leading-relaxed text-white/70">{ventureIntro.note}</p>
+        </div>
+        <p class="max-w-xs font-body text-sm leading-relaxed text-white/70 sm:text-right">{venture.tagline}</p>
+      </div>
+
+      <div class="mt-5 border-t border-white/15 pt-5">
+        <p class="font-body text-[11px] font-medium tracking-[0.15em] text-white/50">WHAT WE DO</p>
+        <span class="sr-only">
+          Services: {venture.services.map((service) => service.label).join(', ')}.
+        </span>
+        <div class="venture-marquee relative mt-4 overflow-hidden">
+          <div class="venture-marquee-track flex w-max items-center gap-10" aria-hidden="true">
+            {marqueeServices.map((service) => (
+              <div class="flex shrink-0 items-center gap-2.5">
+                <svg viewBox="0 0 24 24" class="h-4 w-4 shrink-0 text-[#E3A17E]" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" set:html={service.icon} />
+                <span class="whitespace-nowrap font-body text-sm font-medium text-white/90">{service.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .venture-marquee {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  }
+
+  .venture-marquee-track {
+    animation: venture-marquee 22s linear infinite;
+  }
+
+  .venture-marquee:hover .venture-marquee-track {
+    animation-play-state: paused;
+  }
+
+  @keyframes venture-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-25%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .venture-marquee-track {
+      animation: none;
+    }
+  }
+</style>

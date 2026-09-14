@@ -1,0 +1,115 @@
+---
+import { Image } from 'astro:assets';
+import { navLinks } from '../data/experience';
+import logo from '../assets/images/logo.png';
+---
+
+<header
+  id="site-header"
+  class="sticky top-0 z-50 border-b border-neutral-200/70 bg-white/85 backdrop-blur-md transition-transform duration-300"
+>
+  <div class="mx-auto flex max-w-[1440px] items-center justify-between px-4 py-4 sm:px-8 lg:px-12">
+    <a href="/" class="flex items-center">
+      <Image src={logo} alt="Gokulasigamani" class="h-6 w-auto sm:h-7" loading="eager" />
+    </a>
+
+    <nav class="hidden items-center gap-9 md:flex">
+      {navLinks.map((link) => (
+        <a
+          href={`/#${link.toLowerCase()}`}
+          class="font-body text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
+        >
+          {link}
+        </a>
+      ))}
+    </nav>
+
+    <div class="flex items-center gap-3 sm:gap-4">
+      <a
+        href="/contact"
+        class="hidden items-center gap-1.5 bg-neutral-900 px-5 py-2.5 font-body text-sm font-medium text-white transition-colors hover:bg-neutral-700 sm:inline-flex"
+      >
+        Get In Touch
+        <span aria-hidden="true">↗</span>
+      </a>
+
+      <details id="mobile-menu" class="relative shrink-0 md:hidden">
+        <summary
+          aria-label="Menu"
+          class="flex cursor-pointer items-center gap-2 border border-neutral-200 px-4 py-2.5 font-body text-sm text-neutral-700 transition-colors hover:border-neutral-400"
+        >
+          Menu
+          <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </summary>
+
+        <div class="absolute right-0 top-full z-50 mt-2 w-56 border border-neutral-200 bg-white py-2 shadow-lg">
+          {navLinks.map((link) => (
+            <a
+              href={`/#${link.toLowerCase()}`}
+              class="block px-4 py-2.5 font-body text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+            >
+              {link}
+            </a>
+          ))}
+          <a
+            href="/contact"
+            class="block border-t border-neutral-100 px-4 py-2.5 font-body text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50"
+          >
+            Get In Touch ↗
+          </a>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>
+
+<style>
+  #mobile-menu summary {
+    list-style: none;
+  }
+  #mobile-menu summary::-webkit-details-marker {
+    display: none;
+  }
+</style>
+
+<script>
+  const menu = document.getElementById('mobile-menu') as HTMLDetailsElement | null;
+
+  menu?.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'A') {
+      menu.open = false;
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (menu?.open && !menu.contains(event.target as Node)) {
+      menu.open = false;
+    }
+  });
+
+  const header = document.getElementById('site-header');
+  let lastScrollY = window.scrollY;
+
+  window.addEventListener(
+    'scroll',
+    () => {
+      const currentScrollY = window.scrollY;
+      const scrollingDown = currentScrollY > lastScrollY;
+      const pastThreshold = currentScrollY > 96;
+
+      if (menu?.open) {
+        header?.classList.remove('-translate-y-full');
+      } else if (scrollingDown && pastThreshold) {
+        header?.classList.add('-translate-y-full');
+      } else {
+        header?.classList.remove('-translate-y-full');
+      }
+
+      lastScrollY = currentScrollY;
+    },
+    { passive: true }
+  );
+</script>

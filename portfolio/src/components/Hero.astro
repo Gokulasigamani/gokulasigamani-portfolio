@@ -1,0 +1,87 @@
+---
+import { getImage } from 'astro:assets';
+import { profile, showcase, techStack } from '../data/experience';
+import heroImage from '../assets/images/herenew.jpg';
+
+const optimizedHero = await getImage({ src: heroImage, width: 1600, format: 'webp', quality: 75 });
+---
+
+<section id="home" class="mx-auto max-w-[1440px] px-4 pb-16 pt-6 sm:px-8 lg:px-12">
+  <div class="mx-auto max-w-3xl text-center">
+    <h1 class="font-heading text-[clamp(2rem,6vw,3.5rem)] font-medium leading-[1.08] text-neutral-900">
+      {profile.headline}
+    </h1>
+    <p class="mx-auto mt-5 max-w-lg font-body text-base text-neutral-500">
+      {profile.subheadline}
+    </p>
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+      <a
+        href="#experience"
+        class="inline-flex items-center gap-1.5 bg-neutral-900 px-6 py-3 font-body text-sm font-medium text-white transition-colors hover:bg-neutral-700"
+      >
+        View My Work
+        <span aria-hidden="true">↗</span>
+      </a>
+      <a
+        href="/contact"
+        class="inline-flex items-center gap-1.5 border border-neutral-300 px-6 py-3 font-body text-sm font-medium text-neutral-800 transition-colors hover:border-neutral-500"
+      >
+        Contact Me
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="relative mt-14 overflow-hidden bg-neutral-200 sm:mt-16">
+    <div
+      class="aspect-[16/10] w-full bg-cover bg-center sm:aspect-[3.8/1]"
+      style={`background-image: url('${optimizedHero.src}'); background-position: 50% 50%;`}
+    >
+    </div>
+
+    <!-- Darkening gradient for legibility of overlaid text -->
+    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/25"></div>
+
+    <!-- Top tags -->
+    <div class="static mt-3 flex flex-wrap items-center justify-between gap-2 px-4 sm:absolute sm:inset-x-6 sm:top-6 sm:mt-0 sm:px-0">
+      <div class="flex items-center gap-2">
+        <span class=" bg-white/90 px-3 py-1.5 font-body text-xs font-medium text-neutral-700 backdrop-blur sm:border sm:border-white/30 sm:bg-white/15 sm:text-white sm:shadow-[0_1px_8px_rgba(0,0,0,0.15)] sm:backdrop-blur-md">
+          {showcase.eyebrow}
+        </span>
+        <span class="inline-flex items-center gap-1 bg-white px-3 py-1.5 font-body text-xs font-medium text-neutral-900 shadow-sm">
+          {showcase.eyebrowCta}
+          <span aria-hidden="true">↗</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Bottom row: heading block + tech cards side-by-side (not stacked) -->
+    <div class="static mt-4 flex flex-col gap-4 px-4 sm:absolute sm:inset-x-6 sm:bottom-5 sm:mt-0 sm:flex-row sm:items-end sm:justify-between sm:gap-6 sm:px-0">
+      <div class="sm:w-[240px] sm:shrink-0 lg:w-[280px]">
+        <span class="inline-block bg-white/90 px-3 py-1.5 font-body text-xs font-medium text-neutral-700 backdrop-blur sm:border sm:border-white/30 sm:bg-white/15 sm:text-white sm:shadow-[0_1px_8px_rgba(0,0,0,0.15)] sm:backdrop-blur-md">
+          {showcase.tag}
+        </span>
+        <h2 class="mt-2 font-heading text-lg font-medium leading-tight text-neutral-900 sm:text-xl sm:text-white">
+          {showcase.heading}
+        </h2>
+        <p class="mt-1.5 hidden font-body text-xs leading-snug text-white/80 lg:block">
+          {showcase.body}
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5 lg:max-w-[640px] lg:flex-1">
+        {techStack.map((tech) => (
+          <div class="flex items-center gap-2 border border-neutral-200 bg-white px-3 py-1.5 shadow-md sm:border-white/30 sm:bg-white/15 sm:shadow-[0_1px_8px_rgba(0,0,0,0.15)] sm:backdrop-blur-md">
+            <span class="flex h-6 w-6 shrink-0 items-center justify-center bg-neutral-900 font-body text-[10px] font-medium text-white sm:bg-white/20 sm:backdrop-blur-md">
+              {tech.initials}
+            </span>
+            <div class="min-w-0 leading-tight">
+              <p class="truncate font-body text-xs font-medium text-neutral-900 sm:text-white">{tech.name}</p>
+              <p class="truncate font-body text-[10px] text-neutral-500 sm:text-white/70">{tech.category}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
