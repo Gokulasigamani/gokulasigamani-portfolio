@@ -26,11 +26,18 @@ import { chatWidget } from '../data/experience';
           </p>
         </div>
       </div>
-      <button id="chat-close" type="button" aria-label="Close chat" class="flex h-8 w-8 shrink-0 items-center justify-center text-white/60 transition-colors hover:bg-white/10 hover:text-white">
-        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 6l12 12M18 6 6 18" />
-        </svg>
-      </button>
+      <div class="flex shrink-0 items-center gap-1">
+        <button id="chat-call" type="button" aria-label="Start voice call" class="flex h-8 w-8 shrink-0 items-center justify-center text-white/60 transition-colors hover:bg-white/10 hover:text-white">
+          <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11 11 0 0 0 3.4.85 1 1 0 0 1 .9 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.1a1 1 0 0 1 1 .9 11 11 0 0 0 .85 3.4 1 1 0 0 1-.24 1L6.6 10.8Z" />
+          </svg>
+        </button>
+        <button id="chat-close" type="button" aria-label="Close chat" class="flex h-8 w-8 shrink-0 items-center justify-center text-white/60 transition-colors hover:bg-white/10 hover:text-white">
+          <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div id="chat-messages" class="relative min-h-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto bg-white/10 px-4 py-4 backdrop-blur-xl sm:flex-none sm:max-h-80">
@@ -203,6 +210,28 @@ import { chatWidget } from '../data/experience';
       animation: none;
     }
   }
+
+  #chat-call.call-active {
+    background-color: rgba(16, 185, 129, 0.85);
+    color: white;
+    animation: call-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes call-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #chat-call.call-active {
+      animation: none;
+    }
+  }
 </style>
 
 <style is:global>
@@ -278,6 +307,8 @@ import { chatWidget } from '../data/experience';
   const messagesEl = document.getElementById('chat-messages');
   const quickLinksEl = document.getElementById('chat-quick-links');
   const micBtn = document.getElementById('chat-mic');
+  const callBtn = document.getElementById('chat-call');
+  const sendBtn = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
   const input = form?.querySelector('input[name="message"]') as HTMLInputElement | null;
   const originalPlaceholder = input?.placeholder ?? '';
 
@@ -300,6 +331,22 @@ import { chatWidget } from '../data/experience';
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const supportsSpeech = Boolean(SpeechRecognitionCtor) && 'speechSynthesis' in window;
   let recognition: any = null;
+  let callActive = false;
+  let currentAudio: HTMLAudioElement | null = null;
+  let startListening: (() => void) | null = null;
+
+  function setListening(listening: boolean) {
+    micBtn?.classList.toggle('mic-listening', listening);
+    if (input) input.placeholder = listening ? 'Listening...' : originalPlaceholder;
+  }
+
+  function setCallUI(active: boolean) {
+    callBtn?.classList.toggle('call-active', active);
+    callBtn?.setAttribute('aria-label', active ? 'End voice call' : 'Start voice call');
+    if (input) input.disabled = active;
+    if (micBtn instanceof HTMLButtonElement) micBtn.disabled = active;
+    if (sendBtn) sendBtn.disabled = active;
+  }
 
   function primeSpeechSynthesis() {
     if (!('speechSynthesis' in window)) return;
@@ -310,17 +357,81 @@ import { chatWidget } from '../data/experience';
     }
   }
 
-  function speak(text: string) {
-    if (!('speechSynthesis' in window)) return;
+  function primeAudioPlayback() {
+    try {
+      const silence = new Audio(
+        'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
+      );
+      silence.play().catch(() => {});
+    } catch {
+      // ignore
+    }
+  }
+
+  function speakWithBrowser(text: string, lang: string, onEnd?: () => void) {
+    if (!('speechSynthesis' in window)) {
+      onEnd?.();
+      return;
+    }
     const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(stripMarkdownForSpeech(text));
-    utterance.lang = recognition?.lang || navigator.language || 'en-US';
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.onend = () => onEnd?.();
+    utterance.onerror = () => onEnd?.();
     if (synth.speaking || synth.pending) synth.cancel();
     window.setTimeout(() => synth.speak(utterance), 50);
   }
 
+  async function speakReply(rawText: string, onEnd?: () => void) {
+    const text = stripMarkdownForSpeech(rawText);
+    const lang = recognition?.lang || navigator.language || 'en-US';
+    if (!text) {
+      onEnd?.();
+      return;
+    }
+
+    if (lang.toLowerCase().startsWith('en')) {
+      try {
+        const res = await fetch('/api/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          currentAudio?.pause();
+          const audio = new Audio(url);
+          currentAudio = audio;
+          const cleanup = () => {
+            URL.revokeObjectURL(url);
+            if (currentAudio === audio) currentAudio = null;
+            onEnd?.();
+          };
+          audio.addEventListener('ended', cleanup);
+          audio.addEventListener('error', cleanup);
+          await audio.play();
+          return;
+        }
+      } catch {
+        // fall through to browser voice
+      }
+    }
+
+    speakWithBrowser(text, lang, onEnd);
+  }
+
+  function continueCallIfActive() {
+    if (callActive) startListening?.();
+  }
+
   function stopVoice() {
+    callActive = false;
+    setCallUI(false);
+    setListening(false);
     window.speechSynthesis?.cancel();
+    currentAudio?.pause();
+    currentAudio = null;
     try {
       recognition?.stop();
     } catch {
@@ -330,23 +441,14 @@ import { chatWidget } from '../data/experience';
 
   if (!supportsSpeech) {
     micBtn?.remove();
+    callBtn?.remove();
   } else {
     recognition = new SpeechRecognitionCtor();
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    const setListening = (listening: boolean) => {
-      micBtn?.classList.toggle('mic-listening', listening);
-      if (input) input.placeholder = listening ? 'Listening...' : originalPlaceholder;
-    };
-
-    micBtn?.addEventListener('click', () => {
-      if (micBtn.classList.contains('mic-listening')) {
-        recognition.stop();
-        return;
-      }
+    startListening = function () {
       window.speechSynthesis?.cancel();
-      primeSpeechSynthesis();
       try {
         recognition.lang = navigator.language || 'en-US';
         recognition.start();
@@ -354,6 +456,28 @@ import { chatWidget } from '../data/experience';
       } catch {
         setListening(false);
       }
+    };
+
+    micBtn?.addEventListener('click', () => {
+      if (micBtn.classList.contains('mic-listening')) {
+        recognition.stop();
+        return;
+      }
+      primeSpeechSynthesis();
+      primeAudioPlayback();
+      startListening?.();
+    });
+
+    callBtn?.addEventListener('click', () => {
+      if (callActive) {
+        stopVoice();
+        return;
+      }
+      callActive = true;
+      setCallUI(true);
+      primeSpeechSynthesis();
+      primeAudioPlayback();
+      startListening?.();
     });
 
     recognition.addEventListener('result', (event: any) => {
@@ -366,7 +490,17 @@ import { chatWidget } from '../data/experience';
     });
 
     recognition.addEventListener('end', () => setListening(false));
-    recognition.addEventListener('error', () => setListening(false));
+    recognition.addEventListener('error', (event: any) => {
+      setListening(false);
+      if (!callActive) return;
+      if (event?.error === 'not-allowed') {
+        stopVoice();
+      } else {
+        window.setTimeout(() => {
+          if (callActive) startListening?.();
+        }, 600);
+      }
+    });
   }
 
   function setOpen(open: boolean) {
@@ -486,7 +620,7 @@ import { chatWidget } from '../data/experience';
     if (navIntent) {
       const navReply = `Heading to ${navIntent.label} now.`;
       addMessage('assistant', navReply);
-      if (isVoiceTurn) speak(navReply);
+      if (isVoiceTurn) speakReply(navReply);
       input.disabled = true;
       setTimeout(() => {
         window.location.href = navIntent.path;
@@ -510,20 +644,22 @@ import { chatWidget } from '../data/experience';
       if (!res.ok) {
         const errorReply = data.error || 'Something went wrong. Please try again.';
         addMessage('assistant', errorReply);
-        if (isVoiceTurn) speak(errorReply);
+        if (isVoiceTurn) speakReply(errorReply, continueCallIfActive);
       } else {
         addMessage('assistant', data.reply);
-        if (isVoiceTurn) speak(data.reply);
+        if (isVoiceTurn) speakReply(data.reply, continueCallIfActive);
         history.push({ role: 'assistant', content: data.reply });
       }
     } catch {
       removeTyping();
       const failureReply = 'Something went wrong connecting to the assistant. Please try again or use the contact page.';
       addMessage('assistant', failureReply);
-      if (isVoiceTurn) speak(failureReply);
+      if (isVoiceTurn) speakReply(failureReply, continueCallIfActive);
     } finally {
-      input.disabled = false;
-      input.focus();
+      if (!callActive) {
+        input.disabled = false;
+        input.focus();
+      }
     }
   });
 </script>
