@@ -51,10 +51,17 @@ const posts = authed ? await getAllPostsForAdmin() : [];
 				{posts.map((post) => (
 					<div class="flex flex-wrap items-center justify-between gap-4 py-4">
 						<div>
-							<p class="font-heading text-base font-medium text-neutral-900">{post.title}</p>
-							<p class="mt-1 font-body text-xs text-neutral-400">
-								{post.published ? 'Published' : 'Draft'} · /blog/{post.slug}
-							</p>
+							<div class="flex items-center gap-2">
+								<p class="font-heading text-base font-medium text-neutral-900">{post.title}</p>
+								<span
+									class={`px-2 py-0.5 font-body text-[10px] font-medium tracking-[0.06em] ${
+										post.published ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+									}`}
+								>
+									{post.published ? 'PUBLISHED' : 'DRAFT'}
+								</span>
+							</div>
+							<p class="mt-1 font-body text-xs text-neutral-400">/blog/{post.slug}</p>
 						</div>
 						<div class="flex shrink-0 items-center gap-4">
 							<a href={`/dashboard/edit/${post.id}`} class="font-body text-sm text-neutral-600 transition-colors hover:text-neutral-900">

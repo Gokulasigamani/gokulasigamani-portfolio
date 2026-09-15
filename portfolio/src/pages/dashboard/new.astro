@@ -36,8 +36,8 @@ if (!isAuthenticated(Astro.cookies)) {
 				<textarea id="body" name="body" required rows="16" class="mt-1.5 w-full border border-neutral-200 px-3 py-2.5 font-body text-sm text-neutral-900 focus:border-neutral-400 focus:outline-none"></textarea>
 			</div>
 			<label class="flex items-center gap-2 font-body text-sm text-neutral-700">
-				<input id="published" type="checkbox" name="published" />
-				Publish immediately
+				<input id="published" type="checkbox" name="published" checked />
+				Publish immediately (uncheck to save as a private draft)
 			</label>
 
 			<div class="flex items-center gap-4">
