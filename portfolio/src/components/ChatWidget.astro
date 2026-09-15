@@ -33,12 +33,12 @@ import { chatWidget } from '../data/experience';
       </button>
     </div>
 
-    <div id="chat-messages" class="relative min-h-0 flex-1 space-y-3 overflow-y-auto bg-white/10 px-4 py-4 backdrop-blur-xl sm:flex-none sm:max-h-80">
-      <div class="flex items-start gap-2.5">
+    <div id="chat-messages" class="relative min-h-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto bg-white/10 px-4 py-4 backdrop-blur-xl sm:flex-none sm:max-h-80">
+      <div class="flex min-w-0 items-start gap-2.5">
         <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border border-white/40 bg-white/30 font-heading text-[10px] font-semibold text-[#8A5A3C] backdrop-blur-sm">
           G
         </span>
-        <p class="max-w-[80%] border border-white/50 bg-white/60 px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-800 shadow-sm backdrop-blur-md">
+        <p class="max-w-[80%] min-w-0 break-words border border-white/50 bg-white/60 px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-800 shadow-sm backdrop-blur-md">
           {chatWidget.greeting}
         </p>
       </div>
@@ -410,7 +410,8 @@ import { chatWidget } from '../data/experience';
   function addMessage(role: 'user' | 'assistant', content: string) {
     if (!messagesEl) return;
     const wrapper = document.createElement('div');
-    wrapper.className = role === 'user' ? 'relative flex justify-end' : 'relative flex items-start gap-2.5';
+    wrapper.className =
+      role === 'user' ? 'relative flex min-w-0 justify-end' : 'relative flex min-w-0 items-start gap-2.5';
 
     if (role === 'assistant') {
       const avatar = document.createElement('span');
@@ -423,8 +424,8 @@ import { chatWidget } from '../data/experience';
     const bubble = document.createElement('div');
     bubble.className =
       role === 'user'
-        ? 'max-w-[80%] border border-white/20 bg-[#241B26]/80 px-3.5 py-2.5 font-body text-sm leading-relaxed text-white backdrop-blur-md'
-        : 'chat-content max-w-[80%] border border-white/50 bg-white/60 px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-800 shadow-sm backdrop-blur-md';
+        ? 'max-w-[80%] min-w-0 break-words border border-white/20 bg-[#241B26]/80 px-3.5 py-2.5 font-body text-sm leading-relaxed text-white backdrop-blur-md'
+        : 'chat-content max-w-[80%] min-w-0 break-words border border-white/50 bg-white/60 px-3.5 py-2.5 font-body text-sm leading-relaxed text-neutral-800 shadow-sm backdrop-blur-md';
 
     if (role === 'assistant') {
       bubble.innerHTML = marked.parse(content) as string;
