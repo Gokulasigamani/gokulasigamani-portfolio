@@ -67,6 +67,18 @@ import { chatWidget } from '../data/experience';
         />
       </div>
       <button
+        id="chat-mic"
+        type="button"
+        aria-label="Speak your message"
+        class="ai-border relative flex h-10 w-10 shrink-0 items-center justify-center border border-white/40 bg-white/30 text-neutral-700 backdrop-blur-sm transition-colors hover:bg-white/50"
+      >
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
+          <path d="M19 11a7 7 0 0 1-14 0" />
+          <path d="M12 18v3" />
+        </svg>
+      </button>
+      <button
         type="submit"
         aria-label="Send message"
         class="ai-border relative flex h-10 w-10 shrink-0 items-center justify-center border border-white/20 bg-[#241B26]/90 text-white backdrop-blur-sm transition-colors hover:bg-[#241B26]"
@@ -169,6 +181,28 @@ import { chatWidget } from '../data/experience';
   #chat-messages::-webkit-scrollbar-thumb {
     background: rgba(138, 90, 60, 0.35);
   }
+
+  #chat-mic.mic-listening {
+    background-color: rgba(239, 68, 68, 0.85);
+    color: white;
+    animation: mic-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes mic-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #chat-mic.mic-listening {
+      animation: none;
+    }
+  }
 </style>
 
 <style is:global>
@@ -243,9 +277,86 @@ import { chatWidget } from '../data/experience';
   const form = document.getElementById('chat-form') as HTMLFormElement | null;
   const messagesEl = document.getElementById('chat-messages');
   const quickLinksEl = document.getElementById('chat-quick-links');
+  const micBtn = document.getElementById('chat-mic');
+  const input = form?.querySelector('input[name="message"]') as HTMLInputElement | null;
+  const originalPlaceholder = input?.placeholder ?? '';
 
   const history: ChatMessage[] = [];
   const isMobile = () => window.matchMedia('(max-width: 639px)').matches;
+  let voiceInitiatedTurn = false;
+
+  function stripMarkdownForSpeech(text: string) {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`{1,3}([^`]*)`{1,3}/g, '$1')
+      .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+      .replace(/^#{1,6}\s*/gm, '')
+      .replace(/^[-*]\s+/gm, '')
+      .trim();
+  }
+
+  const SpeechRecognitionCtor =
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const supportsSpeech = Boolean(SpeechRecognitionCtor) && 'speechSynthesis' in window;
+  let recognition: any = null;
+
+  function speak(text: string) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(stripMarkdownForSpeech(text));
+    utterance.lang = recognition?.lang || navigator.language || 'en-US';
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function stopVoice() {
+    window.speechSynthesis?.cancel();
+    try {
+      recognition?.stop();
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!supportsSpeech) {
+    micBtn?.remove();
+  } else {
+    recognition = new SpeechRecognitionCtor();
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    const setListening = (listening: boolean) => {
+      micBtn?.classList.toggle('mic-listening', listening);
+      if (input) input.placeholder = listening ? 'Listening...' : originalPlaceholder;
+    };
+
+    micBtn?.addEventListener('click', () => {
+      if (micBtn.classList.contains('mic-listening')) {
+        recognition.stop();
+        return;
+      }
+      window.speechSynthesis?.cancel();
+      try {
+        recognition.lang = navigator.language || 'en-US';
+        recognition.start();
+        setListening(true);
+      } catch {
+        setListening(false);
+      }
+    });
+
+    recognition.addEventListener('result', (event: any) => {
+      const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+      if (transcript && input && form) {
+        voiceInitiatedTurn = true;
+        input.value = transcript;
+        form.requestSubmit();
+      }
+    });
+
+    recognition.addEventListener('end', () => setListening(false));
+    recognition.addEventListener('error', () => setListening(false));
+  }
 
   function setOpen(open: boolean) {
     if (!panel || !toggle) return;
@@ -260,6 +371,7 @@ import { chatWidget } from '../data/experience';
     toggle.setAttribute('aria-expanded', String(open));
     document.body.classList.toggle('overflow-hidden', open && isMobile());
     if (!open && panel) panel.style.bottom = '';
+    if (!open) stopVoice();
   }
 
   function syncKeyboardInset() {
@@ -348,9 +460,11 @@ import { chatWidget } from '../data/experience';
 
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const input = form.querySelector('input[name="message"]') as HTMLInputElement | null;
     const message = input?.value.trim();
     if (!message || !input) return;
+
+    const isVoiceTurn = voiceInitiatedTurn;
+    voiceInitiatedTurn = false;
 
     quickLinksEl?.classList.add('hidden');
     addMessage('user', message);
@@ -358,7 +472,9 @@ import { chatWidget } from '../data/experience';
 
     const navIntent = detectNavigation(message);
     if (navIntent) {
-      addMessage('assistant', `Heading to ${navIntent.label} now.`);
+      const navReply = `Heading to ${navIntent.label} now.`;
+      addMessage('assistant', navReply);
+      if (isVoiceTurn) speak(navReply);
       input.disabled = true;
       setTimeout(() => {
         window.location.href = navIntent.path;
@@ -380,14 +496,19 @@ import { chatWidget } from '../data/experience';
       removeTyping();
 
       if (!res.ok) {
-        addMessage('assistant', data.error || 'Something went wrong. Please try again.');
+        const errorReply = data.error || 'Something went wrong. Please try again.';
+        addMessage('assistant', errorReply);
+        if (isVoiceTurn) speak(errorReply);
       } else {
         addMessage('assistant', data.reply);
+        if (isVoiceTurn) speak(data.reply);
         history.push({ role: 'assistant', content: data.reply });
       }
     } catch {
       removeTyping();
-      addMessage('assistant', 'Something went wrong connecting to the assistant. Please try again or use the contact page.');
+      const failureReply = 'Something went wrong connecting to the assistant. Please try again or use the contact page.';
+      addMessage('assistant', failureReply);
+      if (isVoiceTurn) speak(failureReply);
     } finally {
       input.disabled = false;
       input.focus();
