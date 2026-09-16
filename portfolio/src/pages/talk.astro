@@ -127,6 +127,7 @@ import { profile } from '../data/experience';
 
       const SPEECH_RMS_THRESHOLD = 0.02;
       const MIN_SPEECH_MS = 300;
+      const SPEECH_GAP_TOLERANCE_MS = 200;
       const SILENCE_MS = 700;
       const MAX_RECORD_MS = 20000;
 
@@ -272,7 +273,8 @@ import { profile } from '../data/experience';
           });
 
           let spokeOnce = false;
-          let speechStart: number | null = null;
+          let streakStart: number | null = null;
+          let lastAbove: number | null = null;
           let silenceStart: number | null = null;
           const recordingStart = Date.now();
           const data = new Uint8Array(analyser.fftSize);
@@ -307,13 +309,16 @@ import { profile } from '../data/experience';
             const now = Date.now();
 
             if (rms > SPEECH_RMS_THRESHOLD) {
-              if (!spokeOnce) {
-                if (speechStart === null) speechStart = now;
-                else if (now - speechStart >= MIN_SPEECH_MS) spokeOnce = true;
-              }
+              lastAbove = now;
+              if (streakStart === null) streakStart = now;
+              if (!spokeOnce && now - streakStart >= MIN_SPEECH_MS) spokeOnce = true;
               silenceStart = null;
             } else {
-              speechStart = null;
+              // Brief dips (natural gaps between syllables) don't reset the streak,
+              // only a real pause longer than SPEECH_GAP_TOLERANCE_MS does.
+              if (streakStart !== null && lastAbove !== null && now - lastAbove > SPEECH_GAP_TOLERANCE_MS) {
+                streakStart = null;
+              }
               if (spokeOnce) {
                 if (silenceStart === null) silenceStart = now;
                 else if (now - silenceStart > SILENCE_MS) {
@@ -421,6 +426,13 @@ import { profile } from '../data/experience';
           }
 
           audioContext = new AudioContext();
+          if (audioContext.state === 'suspended') {
+            try {
+              await audioContext.resume();
+            } catch {
+              // ignore
+            }
+          }
           analyser = audioContext.createAnalyser();
           analyser.fftSize = 1024;
           audioContext.createMediaStreamSource(stream).connect(analyser);
