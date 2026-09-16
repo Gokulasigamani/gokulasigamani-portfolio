@@ -3,7 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 
 const MODEL = 'canopylabs/orpheus-v1-english';
-const VOICE = 'daniel';
+const VOICE = 'troy';
 const MAX_INPUT_LENGTH = 1000;
 
 export const POST: APIRoute = async ({ request }) => {
