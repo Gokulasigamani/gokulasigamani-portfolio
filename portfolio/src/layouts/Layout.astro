@@ -5,17 +5,49 @@ import Footer from '../components/Footer.astro';
 import ScrollTop from '../components/ScrollTop.astro';
 import ChatWidget from '../components/ChatWidget.astro';
 import BlogPromo from '../components/BlogPromo.astro';
+import { profile, socialLinks } from '../data/experience';
 
 interface Props {
   title: string;
   description: string;
   ogImage?: string;
   ogType?: 'website' | 'article';
+  noindex?: boolean;
 }
 
-const { title, description, ogImage, ogType = 'website' } = Astro.props;
+const { title, description, ogImage, ogType = 'website', noindex = false } = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
-const resolvedOgImage = ogImage ? new URL(ogImage, canonicalUrl) : undefined;
+const resolvedOgImage = new URL(ogImage ?? '/images/Gokulasigamani_icon.png', canonicalUrl);
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: profile.name,
+  alternateName: 'Gokulasigamani',
+  jobTitle: profile.role,
+  description: profile.subheadline,
+  email: `mailto:${profile.email}`,
+  url: Astro.site?.toString(),
+  image: resolvedOgImage.toString(),
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Bengaluru',
+    addressRegion: 'Karnataka',
+    addressCountry: 'IN'
+  },
+  sameAs: socialLinks.map((social) => social.href)
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: `${profile.name} | ${profile.role}`,
+  url: Astro.site?.toString(),
+  author: {
+    '@type': 'Person',
+    name: profile.name
+  }
+};
 ---
 
 <html lang="en">
@@ -27,18 +59,32 @@ const resolvedOgImage = ogImage ? new URL(ogImage, canonicalUrl) : undefined;
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		<meta name="author" content={profile.name} />
 		<link rel="canonical" href={canonicalUrl} />
+		{noindex ? (
+			<meta name="robots" content="noindex, nofollow" />
+		) : (
+			<meta name="robots" content="index, follow" />
+		)}
 
 		<meta property="og:type" content={ogType} />
+		<meta property="og:site_name" content={profile.name} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:url" content={canonicalUrl} />
-		{resolvedOgImage && <meta property="og:image" content={resolvedOgImage} />}
+		<meta property="og:image" content={resolvedOgImage} />
 
-		<meta name="twitter:card" content={resolvedOgImage ? 'summary_large_image' : 'summary'} />
+		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
-		{resolvedOgImage && <meta name="twitter:image" content={resolvedOgImage} />}
+		<meta name="twitter:image" content={resolvedOgImage} />
+
+		{!noindex && (
+			<>
+				<script type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+				<script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+			</>
+		)}
 	</head>
 	<body class="overflow-x-hidden bg-white">
 		<Header />

@@ -6,7 +6,7 @@ import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://gokulasigamani-portfolio.vercel.app',
+  site: 'https://gokulasigamani.sunajo.com',
   output: 'static',
   adapter: vercel(),
   vite: {

@@ -9,7 +9,7 @@ const authed = isAuthenticated(Astro.cookies);
 const posts = authed ? await getAllPostsForAdmin() : [];
 ---
 
-<Layout title="Dashboard | Gokulasigamani N" description="Admin dashboard.">
+<Layout title="Dashboard | Gokulasigamani N" description="Admin dashboard." noindex>
 	{!authed ? (
 		<section class="mx-auto flex min-h-[70vh] max-w-sm flex-col items-center justify-center px-4 text-center">
 			<p class="font-body text-xs font-medium tracking-[0.15em] text-neutral-400">10 / MEMBERS AREA</p>
