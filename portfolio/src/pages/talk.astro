@@ -126,8 +126,27 @@ import { profile } from '../data/experience';
       let callActive = false;
 
       const SPEECH_RMS_THRESHOLD = 0.02;
-      const SILENCE_MS = 900;
+      const MIN_SPEECH_MS = 300;
+      const SILENCE_MS = 700;
       const MAX_RECORD_MS = 20000;
+
+      // Groq Whisper hallucinates short stock phrases on silence/noise-only audio
+      // (e.g. it transcribes true silence as "Thank you."). Filter those out instead
+      // of treating them as a real question.
+      const HALLUCINATION_PATTERNS = [
+        /^thanks?( you)?[.!]?$/i,
+        /^thank you for watching[.!]?$/i,
+        /^thanks for watching[.!]?$/i,
+        /^please (subscribe|like and subscribe)[.!]?$/i,
+        /^(bye|goodbye|see you)[.!]?$/i,
+        /^[.,!?\s]*$/
+      ];
+
+      function looksHallucinated(transcript: string): boolean {
+        const text = transcript.trim();
+        if (!text) return true;
+        return HALLUCINATION_PATTERNS.some((pattern) => pattern.test(text));
+      }
 
       const supportsCall =
         Boolean(navigator.mediaDevices?.getUserMedia) && typeof MediaRecorder !== 'undefined';
@@ -253,6 +272,7 @@ import { profile } from '../data/experience';
           });
 
           let spokeOnce = false;
+          let speechStart: number | null = null;
           let silenceStart: number | null = null;
           const recordingStart = Date.now();
           const data = new Uint8Array(analyser.fftSize);
@@ -287,13 +307,19 @@ import { profile } from '../data/experience';
             const now = Date.now();
 
             if (rms > SPEECH_RMS_THRESHOLD) {
-              spokeOnce = true;
+              if (!spokeOnce) {
+                if (speechStart === null) speechStart = now;
+                else if (now - speechStart >= MIN_SPEECH_MS) spokeOnce = true;
+              }
               silenceStart = null;
-            } else if (spokeOnce) {
-              if (silenceStart === null) silenceStart = now;
-              else if (now - silenceStart > SILENCE_MS) {
-                mediaRecorder?.stop();
-                return;
+            } else {
+              speechStart = null;
+              if (spokeOnce) {
+                if (silenceStart === null) silenceStart = now;
+                else if (now - silenceStart > SILENCE_MS) {
+                  mediaRecorder?.stop();
+                  return;
+                }
               }
             }
 
@@ -320,7 +346,7 @@ import { profile } from '../data/experience';
             if (!callActive) return;
 
             const transcript = typeof transcribeData.transcript === 'string' ? transcribeData.transcript.trim() : '';
-            if (!transcript) {
+            if (!transcript || looksHallucinated(transcript)) {
               startListeningTurn();
               return;
             }
