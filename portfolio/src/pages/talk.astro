@@ -193,10 +193,17 @@ import { profile } from '../data/experience';
 
         function pickIndianVoice(lang: string): SpeechSynthesisVoice | null {
           const voices = window.speechSynthesis.getVoices();
-          const matches = voices.filter((v) => v.lang.toLowerCase() === lang.toLowerCase());
-          if (matches.length === 0) return null;
-          const male = matches.find((v) => /male|prabhat|ravi|hemant|rishi/i.test(v.name));
-          return male || matches[0];
+          if (voices.length === 0) return null;
+          const exact = voices.filter((v) => v.lang.toLowerCase() === lang.toLowerCase());
+          const langPrefix = lang.split('-')[0].toLowerCase();
+          // Exact locale (e.g. en-IN) is rarely installed outside India-region OSes.
+          // Fall back to any voice for the same language, then to any voice at all,
+          // so we never force a lang with zero matching voices (browsers can then
+          // silently produce no audio and never fire onend/onerror, hanging the call).
+          const sameLanguage = exact.length ? exact : voices.filter((v) => v.lang.toLowerCase().startsWith(langPrefix));
+          const pool = sameLanguage.length ? sameLanguage : voices;
+          const male = pool.find((v) => /male|prabhat|ravi|hemant|rishi/i.test(v.name));
+          return male || pool[0];
         }
 
         async function speakWithBrowser(text: string, onEnd: () => void) {
@@ -206,11 +213,26 @@ import { profile } from '../data/experience';
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.lang = voice?.lang || targetLang;
           if (voice) utterance.voice = voice;
-          utterance.onend = onEnd;
-          utterance.onerror = onEnd;
+
+          let finished = false;
+          const finish = () => {
+            if (finished) return;
+            finished = true;
+            window.clearTimeout(safetyTimer);
+            onEnd();
+          };
+          utterance.onend = finish;
+          utterance.onerror = finish;
+
+          // Some browsers never fire onend/onerror for an unsupported voice/lang
+          // combination, which would otherwise hang the call forever with no audio.
+          const safetyTimer = window.setTimeout(finish, Math.max(4000, text.length * 90));
+
           window.speechSynthesis.cancel();
           window.setTimeout(() => window.speechSynthesis.speak(utterance), 50);
         }
+
+        const SPEAK_FETCH_TIMEOUT_MS = 8000;
 
         async function speak(text: string, onEnd: () => void) {
           setOrbState('speaking');
@@ -219,11 +241,19 @@ import { profile } from '../data/experience';
           const lang = navigator.language || 'en-US';
           if (lang.toLowerCase().startsWith('en')) {
             try {
-              const res = await fetch('/api/speak', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-              });
+              const controller = new AbortController();
+              const timeout = window.setTimeout(() => controller.abort(), SPEAK_FETCH_TIMEOUT_MS);
+              let res: Response;
+              try {
+                res = await fetch('/api/speak', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ text }),
+                  signal: controller.signal
+                });
+              } finally {
+                window.clearTimeout(timeout);
+              }
               if (res.ok) {
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -241,7 +271,7 @@ import { profile } from '../data/experience';
                 return;
               }
             } catch {
-              // fall through to browser voice
+              // timed out, aborted, or network error — fall through to browser voice
             }
           }
 
