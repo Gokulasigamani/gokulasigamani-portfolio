@@ -274,7 +274,7 @@ import { profile } from '../data/experience';
         let mediaRecorder: MediaRecorder | null = null;
         let recordedChunks: Blob[] = [];
         let vadFrame = 0;
-        let currentAudio: HTMLAudioElement | null = null;
+        let currentTtsSource: AudioBufferSourceNode | null = null;
 
         function setOrbState(state: 'idle' | 'listening' | 'speaking') {
           orb?.classList.remove('talk-listening', 'talk-speaking');
@@ -343,7 +343,15 @@ import { profile } from '../data/experience';
           setStatus('Gokul AI is speaking...');
 
           const lang = navigator.language || 'en-US';
-          if (lang.toLowerCase().startsWith('en')) {
+          // Playing a freshly created <audio> element's .play() outside a direct
+          // user gesture is its own, separately gated autoplay check (mobile
+          // Safari in particular silently rejects it even though the call's mic
+          // permission and AudioContext were already granted/unlocked). Play the
+          // fetched voice through the AudioContext we already resumed
+          // synchronously inside the call-start click instead - Web Audio
+          // playback is gated by that context's running state, not by a fresh
+          // per-call gesture check, so it keeps working for the whole call.
+          if (lang.toLowerCase().startsWith('en') && audioContext) {
             try {
               const res = await fetchWithTimeout(
                 '/api/speak',
@@ -355,23 +363,36 @@ import { profile } from '../data/experience';
                 SPEAK_FETCH_TIMEOUT_MS
               );
               if (res.ok) {
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                currentAudio?.pause();
-                const audio = new Audio(url);
-                currentAudio = audio;
-                const cleanup = () => {
-                  URL.revokeObjectURL(url);
-                  if (currentAudio === audio) currentAudio = null;
+                const arrayBuffer = await res.arrayBuffer();
+                if (audioContext.state === 'suspended') {
+                  try {
+                    await audioContext.resume();
+                  } catch {
+                    // ignore
+                  }
+                }
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                if (!callActive) return;
+
+                try {
+                  currentTtsSource?.stop();
+                } catch {
+                  // ignore
+                }
+
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContext.destination);
+                currentTtsSource = source;
+                source.onended = () => {
+                  if (currentTtsSource === source) currentTtsSource = null;
                   onEnd();
                 };
-                audio.addEventListener('ended', cleanup);
-                audio.addEventListener('error', cleanup);
-                await audio.play();
+                source.start();
                 return;
               }
             } catch {
-              // timed out, aborted, or network error — fall through to browser voice
+              // timed out, aborted, decode error, or network error — fall through to browser voice
             }
           }
 
@@ -560,8 +581,12 @@ import { profile } from '../data/experience';
 
           stopVad();
           window.speechSynthesis.cancel();
-          currentAudio?.pause();
-          currentAudio = null;
+          try {
+            currentTtsSource?.stop();
+          } catch {
+            // ignore
+          }
+          currentTtsSource = null;
 
           try {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
