@@ -6,6 +6,41 @@ const MODEL = 'canopylabs/orpheus-v1-english';
 const VOICE = 'troy';
 const MAX_INPUT_LENGTH = 1000;
 
+// Groq streams this response, so it can't know the final size up front and
+// marks the RIFF and data chunk sizes as open-ended placeholders (0xFFFFFFFF)
+// instead of the real byte counts; the file also has a LIST (metadata) chunk
+// between fmt and data, not the fixed 44-byte layout a naive reader might
+// assume. Desktop browsers are lenient and just read to the end of the file
+// regardless of the declared sizes, but mobile media decoders (iOS
+// AVFoundation, Android's extractor) can be stricter and silently produce no
+// audio for a WAV whose declared chunk sizes don't match its actual bytes -
+// the call then shows "speaking" with nothing audible. Rewrite the header
+// with the real sizes, walking the actual chunk layout, so every platform
+// gets a well-formed file.
+function fixWavHeader(buffer: ArrayBuffer): ArrayBuffer {
+  const bytes = new Uint8Array(buffer);
+  const view = new DataView(buffer);
+  const tag = (offset: number) =>
+    String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]);
+
+  if (bytes.length < 44 || tag(0) !== 'RIFF' || tag(8) !== 'WAVE') {
+    return buffer;
+  }
+
+  view.setUint32(4, buffer.byteLength - 8, true);
+
+  for (let offset = 12; offset + 8 <= bytes.length; ) {
+    if (tag(offset) === 'data') {
+      view.setUint32(offset + 4, buffer.byteLength - offset - 8, true);
+      break;
+    }
+    const chunkSize = view.getUint32(offset + 4, true);
+    offset += 8 + chunkSize + (chunkSize % 2);
+  }
+
+  return buffer;
+}
+
 export const POST: APIRoute = async ({ request }) => {
   const apiKey = import.meta.env.GROQ_API_KEY;
 
@@ -58,7 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const audio = await response.arrayBuffer();
+    const audio = fixWavHeader(await response.arrayBuffer());
     return new Response(audio, {
       status: 200,
       headers: { 'Content-Type': 'audio/wav' }
