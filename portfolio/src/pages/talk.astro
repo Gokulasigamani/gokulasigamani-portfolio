@@ -195,6 +195,17 @@ import { profile } from '../data/experience';
     </style>
 
     <script>
+      // Rebuilt from scratch after repeated mobile failures traced back to
+      // AudioContext + amplitude-based voice-activity detection: iOS/Android
+      // gesture and suspend-state rules around AudioContext are hard to get
+      // right blind (no real-device access to verify against), and every fix
+      // to that layer just moved the failure somewhere else. This version
+      // removes AudioContext/analyser entirely - there is no automatic
+      // silence detection to get wrong. Each turn just records for a fixed
+      // window and sends whatever was captured; Whisper + the hallucination
+      // filter below handle turns where nothing was actually said. Simpler
+      // surface area, nothing left that depends on unverifiable mobile-only
+      // gesture/suspend timing.
       type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
       const orb = document.getElementById('talk-orb');
@@ -206,58 +217,47 @@ import { profile } from '../data/experience';
       const history: ChatMessage[] = [];
       let callActive = false;
 
-      // A tiny, valid, silent WAV clip used only to unlock <audio> playback on
-      // mobile Safari - built in code instead of a hand-written base64 blob so
-      // there's no risk of shipping a malformed data URI.
+      // A short, valid, silent WAV clip used only to unlock <audio> playback on
+      // mobile Safari - built in code (not a hand-written base64 blob) so
+      // there's no risk of shipping a malformed data URI. 100ms rather than a
+      // single sample, since some mobile decoders treat degenerately short
+      // clips as invalid and refuse to play them, which would silently defeat
+      // the unlock itself.
       function createSilentAudioUrl(): string {
-        const buffer = new ArrayBuffer(45);
+        const sampleRate = 8000;
+        const numSamples = 800;
+        const buffer = new ArrayBuffer(44 + numSamples);
         const view = new DataView(buffer);
         const writeString = (offset: number, text: string) => {
           for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
         };
         writeString(0, 'RIFF');
-        view.setUint32(4, 37, true);
+        view.setUint32(4, 36 + numSamples, true);
         writeString(8, 'WAVE');
         writeString(12, 'fmt ');
         view.setUint32(16, 16, true);
         view.setUint16(20, 1, true);
         view.setUint16(22, 1, true);
-        view.setUint32(24, 8000, true);
-        view.setUint32(28, 8000, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate, true);
         view.setUint16(32, 1, true);
         view.setUint16(34, 8, true);
         writeString(36, 'data');
-        view.setUint32(40, 1, true);
-        view.setUint8(44, 128);
+        view.setUint32(40, numSamples, true);
+        for (let i = 0; i < numSamples; i++) view.setUint8(44 + i, 128);
         return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
       }
 
-      // A single fixed RMS threshold assumes every microphone/browser reports the
-      // same loudness for normal speech, which isn't true — a quiet laptop mic can
-      // sit well under a threshold tuned against a sensitive headset, so speech
-      // never gets flagged and the call just silently loops. Instead we measure
-      // this device's actual ambient noise floor for a brief moment at the start
-      // of each turn and require speech to clear that floor by a margin, so
-      // detection adapts to whatever hardware is actually listening.
-      const NOISE_SAMPLE_MS = 250;
-      const SPEECH_MARGIN_ABOVE_NOISE = 0.012;
-      const SPEECH_RMS_MIN_THRESHOLD = 0.012;
-      const MIN_SPEECH_MS = 300;
-      const SPEECH_GAP_TOLERANCE_MS = 200;
-      const SILENCE_MS = 700;
-      // If nothing crosses the speech threshold at all within this window, give up
-      // and restart listening instead of silently running the full recording cap —
-      // keeps a bad reading from feeling like the call is stuck.
-      const NO_SPEECH_TIMEOUT_MS = 6000;
-      const MAX_RECORD_MS = 20000;
-      // Each turn makes up to three sequential requests (transcribe, chat, speak),
-      // each with its own connection setup - on a real mobile connection (higher
-      // latency, slower upload for the recorded clip) that easily adds up past a
-      // tight budget, which was aborting almost every turn and replacing a real
-      // reply with the same generic fallback message every time. These are
-      // deliberately generous so a slow-but-working connection still gets a real
-      // answer; MAX_RECORD_MS above remains the hard ceiling on how long any one
-      // turn can run.
+      // No voice-activity detection: each turn just records for this long,
+      // then gets processed. Short enough to keep the call feeling responsive,
+      // long enough for a normal question. Tapping the pill mid-recording ends
+      // the turn early instead of waiting out the rest of the window.
+      const RECORD_WINDOW_MS = 7000;
+
+      // Each turn makes up to three sequential requests (transcribe, chat,
+      // speak), each with its own connection setup - on a real mobile
+      // connection (higher latency, slower upload for the recorded clip) that
+      // adds up fast, so these are deliberately generous rather than tight.
       const TRANSCRIBE_TIMEOUT_MS = 25000;
       const CHAT_TIMEOUT_MS = 20000;
       const SPEAK_FETCH_TIMEOUT_MS = 15000;
@@ -277,7 +277,9 @@ import { profile } from '../data/experience';
 
       // Groq Whisper hallucinates short stock phrases on silence/noise-only audio
       // (e.g. it transcribes true silence as "Thank you."). Filter those out instead
-      // of treating them as a real question.
+      // of treating them as a real question. This is now the ONLY thing standing
+      // between a silent recording and a wasted round trip, since there's no
+      // client-side speech gate anymore.
       const HALLUCINATION_PATTERNS = [
         /^thanks?( you)?[.!]?$/i,
         /^thank you for watching[.!]?$/i,
@@ -306,11 +308,9 @@ import { profile } from '../data/experience';
         setStatus('Voice calls are not supported in this browser.');
       } else {
         let stream: MediaStream | null = null;
-        let audioContext: AudioContext | null = null;
-        let analyser: AnalyserNode | null = null;
         let mediaRecorder: MediaRecorder | null = null;
         let recordedChunks: Blob[] = [];
-        let vadFrame = 0;
+        let recordTimeout = 0;
         let currentTtsUrl: string | null = null;
 
         function setOrbState(state: 'idle' | 'listening' | 'speaking') {
@@ -382,13 +382,12 @@ import { profile } from '../data/experience';
           const lang = navigator.language || 'en-US';
           // <audio> elements bypass iOS's hardware ringer/silent switch (they're
           // "media playback", like a music app), whereas raw Web Audio API output
-          // does not - it gets silenced by that switch. So we play through a real
-          // <audio> element, but reuse the SAME element for every reply. A brand
-          // new element's .play() outside a direct gesture is rejected on mobile
-          // Safari; this one element was already unlocked with a synchronous,
-          // gesture-linked play() at call start (see the click handler below),
-          // and once one element is unlocked its later async plays keep working
-          // for the rest of the call.
+          // does not. We play through a real <audio> element, but reuse the SAME
+          // element for every reply: a brand new element's .play() outside a
+          // direct gesture is rejected on mobile Safari, but this one element was
+          // already unlocked with a synchronous, gesture-linked play() at call
+          // start (see the click handler below), so its later async plays keep
+          // working for the rest of the call.
           if (lang.toLowerCase().startsWith('en') && audioEl) {
             try {
               const res = await fetchWithTimeout(
@@ -424,8 +423,9 @@ import { profile } from '../data/experience';
                 if (previousUrl) URL.revokeObjectURL(previousUrl);
                 return;
               }
-            } catch {
-              // timed out, aborted, or network error — fall through to browser voice
+            } catch (err) {
+              // timed out, aborted, or playback rejected — fall through to browser voice
+              console.error('[talk] Groq voice playback failed, falling back:', err);
             }
           }
 
@@ -440,45 +440,29 @@ import { profile } from '../data/experience';
           return '';
         }
 
-        function stopVad() {
-          if (vadFrame) cancelAnimationFrame(vadFrame);
-          vadFrame = 0;
-        }
-
-        function startListeningTurn(restartAttemptsSoFar = 0) {
-          if (!callActive || !stream || !audioContext || !analyser) return;
+        function startListeningTurn() {
+          if (!callActive || !stream) return;
 
           const mimeType = pickRecorderMimeType();
           recordedChunks = [];
-          mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+          try {
+            mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+          } catch (err) {
+            console.error('[talk] Failed to start recorder:', err);
+            setStatus('Could not access the microphone. Please try again.');
+            return;
+          }
 
           mediaRecorder.addEventListener('dataavailable', (event) => {
             if (event.data.size > 0) recordedChunks.push(event.data);
           });
 
-          let spokeOnce = false;
-          let streakStart: number | null = null;
-          let lastAbove: number | null = null;
-          let silenceStart: number | null = null;
-          let noiseFloor: number | null = null;
-          const noiseSamples: number[] = [];
-          const recordingStart = Date.now();
-          const data = new Uint8Array(analyser.fftSize);
-          let restartAttempts = restartAttemptsSoFar;
-
           mediaRecorder.addEventListener('stop', () => {
-            stopVad();
+            window.clearTimeout(recordTimeout);
             if (!callActive) return;
 
-            if (!spokeOnce || recordedChunks.length === 0) {
-              restartAttempts += 1;
-              // After a few silent attempts (~15-20s with nothing detected), let the
-              // visitor know we're still trying rather than leaving an unchanging
-              // "Listening..." label that reads as stuck.
-              if (restartAttempts >= 3) {
-                setStatus('Still listening — try speaking a bit louder');
-              }
-              startListeningTurn(restartAttempts);
+            if (recordedChunks.length === 0) {
+              startListeningTurn();
               return;
             }
 
@@ -488,66 +472,11 @@ import { profile } from '../data/experience';
 
           mediaRecorder.start();
           setOrbState('listening');
-          if (restartAttemptsSoFar < 3) setStatus('Listening...');
+          setStatus('Listening...');
 
-          const tick = () => {
-            if (!callActive || !analyser || mediaRecorder?.state !== 'recording') return;
-
-            analyser.getByteTimeDomainData(data);
-            let sumSquares = 0;
-            for (let i = 0; i < data.length; i++) {
-              const normalized = (data[i] - 128) / 128;
-              sumSquares += normalized * normalized;
-            }
-            const rms = Math.sqrt(sumSquares / data.length);
-            const now = Date.now();
-            const elapsed = now - recordingStart;
-
-            if (noiseFloor === null) {
-              if (elapsed < NOISE_SAMPLE_MS) {
-                noiseSamples.push(rms);
-              } else {
-                const avgNoise = noiseSamples.length
-                  ? noiseSamples.reduce((sum, value) => sum + value, 0) / noiseSamples.length
-                  : 0;
-                noiseFloor = avgNoise;
-              }
-            }
-
-            const speechThreshold = Math.max(SPEECH_RMS_MIN_THRESHOLD, (noiseFloor ?? 0) + SPEECH_MARGIN_ABOVE_NOISE);
-
-            if (rms > speechThreshold) {
-              lastAbove = now;
-              if (streakStart === null) streakStart = now;
-              if (!spokeOnce && now - streakStart >= MIN_SPEECH_MS) spokeOnce = true;
-              silenceStart = null;
-            } else {
-              // Brief dips (natural gaps between syllables) don't reset the streak,
-              // only a real pause longer than SPEECH_GAP_TOLERANCE_MS does.
-              if (streakStart !== null && lastAbove !== null && now - lastAbove > SPEECH_GAP_TOLERANCE_MS) {
-                streakStart = null;
-              }
-              if (spokeOnce) {
-                if (silenceStart === null) silenceStart = now;
-                else if (now - silenceStart > SILENCE_MS) {
-                  mediaRecorder?.stop();
-                  return;
-                }
-              } else if (elapsed > NO_SPEECH_TIMEOUT_MS) {
-                mediaRecorder?.stop();
-                return;
-              }
-            }
-
-            if (now - recordingStart > MAX_RECORD_MS) {
-              mediaRecorder?.stop();
-              return;
-            }
-
-            vadFrame = requestAnimationFrame(tick);
-          };
-
-          vadFrame = requestAnimationFrame(tick);
+          recordTimeout = window.setTimeout(() => {
+            if (mediaRecorder?.state === 'recording') mediaRecorder.stop();
+          }, RECORD_WINDOW_MS);
         }
 
         async function transcribeAndRespond(blob: Blob) {
@@ -599,6 +528,7 @@ import { profile } from '../data/experience';
             });
           } catch (err) {
             if (!callActive) return;
+            console.error('[talk] transcribeAndRespond failed:', err);
             const timedOut = err instanceof DOMException && err.name === 'AbortError';
             const message = timedOut
               ? 'That took a bit long over this connection — try asking again.'
@@ -616,7 +546,8 @@ import { profile } from '../data/experience';
           setOrbState('idle');
           setStatus('Tap to start talking');
 
-          stopVad();
+          window.clearTimeout(recordTimeout);
+          recordTimeout = 0;
           window.speechSynthesis.cancel();
           if (audioEl) {
             try {
@@ -639,30 +570,20 @@ import { profile } from '../data/experience';
 
           stream?.getTracks().forEach((track) => track.stop());
           stream = null;
-          audioContext?.close();
-          audioContext = null;
-          analyser = null;
         }
 
         callBtn?.addEventListener('click', async () => {
           if (callActive) {
-            endCall();
+            if (mediaRecorder?.state === 'recording') {
+              // Mid-recording tap: end this turn early instead of waiting out
+              // the rest of RECORD_WINDOW_MS.
+              mediaRecorder.stop();
+            } else {
+              endCall();
+            }
             return;
           }
 
-          // iOS Safari (and several Android WebViews) only let an AudioContext resume
-          // out of suspended state when that call is still inside the original click's
-          // gesture. Awaiting getUserMedia first breaks that chain and leaves the
-          // context permanently suspended, so the volume analyser reads silence forever
-          // and the call never detects speech. Create + resume it synchronously first.
-          audioContext = new AudioContext();
-          if (audioContext.state === 'suspended') {
-            try {
-              await audioContext.resume();
-            } catch {
-              // ignore
-            }
-          }
           try {
             window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
           } catch {
@@ -682,23 +603,18 @@ import { profile } from '../data/experience';
               audioEl.pause();
               audioEl.currentTime = 0;
               URL.revokeObjectURL(unlockUrl);
-            } catch {
-              // ignore — speak() will fall back to browser voice if this didn't take
+            } catch (err) {
+              console.error('[talk] Audio unlock failed, voice may fall back to the browser TTS voice:', err);
             }
           }
 
           try {
             stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          } catch {
+          } catch (err) {
+            console.error('[talk] getUserMedia failed:', err);
             setStatus('Microphone permission denied.');
-            audioContext?.close();
-            audioContext = null;
             return;
           }
-
-          analyser = audioContext.createAnalyser();
-          analyser.fftSize = 1024;
-          audioContext.createMediaStreamSource(stream).connect(analyser);
 
           callActive = true;
           callBtn.classList.add('talk-active');
