@@ -1,6 +1,14 @@
 ---
+export const prerender = false;
+
 import '../styles/global.css';
 import { profile } from '../data/experience';
+
+// This page is under active iteration and staleness here has real UX cost
+// (mobile browsers/CDNs revalidate cached static assets less reliably than
+// desktop ones), so it's rendered fresh per-request instead of being built
+// once as a static, cacheable file.
+Astro.response.headers.set('Cache-Control', 'no-store');
 ---
 
 <html lang="en">
