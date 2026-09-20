@@ -3,7 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 
 const MODEL = 'canopylabs/orpheus-v1-english';
-const VOICE = 'troy';
+const VOICE = 'austin';
 const MAX_INPUT_LENGTH = 1000;
 
 // Groq streams this response, so it can't know the final size up front and
