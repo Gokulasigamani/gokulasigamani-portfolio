@@ -250,9 +250,17 @@ import { profile } from '../data/experience';
       // keeps a bad reading from feeling like the call is stuck.
       const NO_SPEECH_TIMEOUT_MS = 6000;
       const MAX_RECORD_MS = 20000;
-      const TRANSCRIBE_TIMEOUT_MS = 15000;
-      const CHAT_TIMEOUT_MS = 15000;
-      const SPEAK_FETCH_TIMEOUT_MS = 8000;
+      // Each turn makes up to three sequential requests (transcribe, chat, speak),
+      // each with its own connection setup - on a real mobile connection (higher
+      // latency, slower upload for the recorded clip) that easily adds up past a
+      // tight budget, which was aborting almost every turn and replacing a real
+      // reply with the same generic fallback message every time. These are
+      // deliberately generous so a slow-but-working connection still gets a real
+      // answer; MAX_RECORD_MS above remains the hard ceiling on how long any one
+      // turn can run.
+      const TRANSCRIBE_TIMEOUT_MS = 25000;
+      const CHAT_TIMEOUT_MS = 20000;
+      const SPEAK_FETCH_TIMEOUT_MS = 15000;
 
       // Every network call in the call pipeline goes through this so a slow/stalled
       // Groq response can never hang the call forever — it aborts and the caller's
@@ -589,9 +597,13 @@ import { profile } from '../data/experience';
             speak(data.reply, () => {
               if (callActive) startListeningTurn();
             });
-          } catch {
+          } catch (err) {
             if (!callActive) return;
-            speak('Something went wrong connecting. Please try again.', () => {
+            const timedOut = err instanceof DOMException && err.name === 'AbortError';
+            const message = timedOut
+              ? 'That took a bit long over this connection — try asking again.'
+              : 'Something went wrong connecting. Please try again.';
+            speak(message, () => {
               if (callActive) startListeningTurn();
             });
           }
