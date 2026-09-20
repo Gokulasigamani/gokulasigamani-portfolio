@@ -71,6 +71,8 @@ import { profile } from '../data/experience';
       </div>
     </div>
 
+    <audio id="talk-audio" playsinline></audio>
+
     <style>
       .talk-bg {
         background:
@@ -199,9 +201,36 @@ import { profile } from '../data/experience';
       const statusEl = document.getElementById('talk-status');
       const callBtn = document.getElementById('talk-call');
       const fallbackEl = document.getElementById('talk-fallback');
+      const audioEl = document.getElementById('talk-audio') as HTMLAudioElement | null;
 
       const history: ChatMessage[] = [];
       let callActive = false;
+
+      // A tiny, valid, silent WAV clip used only to unlock <audio> playback on
+      // mobile Safari - built in code instead of a hand-written base64 blob so
+      // there's no risk of shipping a malformed data URI.
+      function createSilentAudioUrl(): string {
+        const buffer = new ArrayBuffer(45);
+        const view = new DataView(buffer);
+        const writeString = (offset: number, text: string) => {
+          for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
+        };
+        writeString(0, 'RIFF');
+        view.setUint32(4, 37, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, 8000, true);
+        view.setUint32(28, 8000, true);
+        view.setUint16(32, 1, true);
+        view.setUint16(34, 8, true);
+        writeString(36, 'data');
+        view.setUint32(40, 1, true);
+        view.setUint8(44, 128);
+        return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
+      }
 
       // A single fixed RMS threshold assumes every microphone/browser reports the
       // same loudness for normal speech, which isn't true — a quiet laptop mic can
@@ -274,7 +303,7 @@ import { profile } from '../data/experience';
         let mediaRecorder: MediaRecorder | null = null;
         let recordedChunks: Blob[] = [];
         let vadFrame = 0;
-        let currentTtsSource: AudioBufferSourceNode | null = null;
+        let currentTtsUrl: string | null = null;
 
         function setOrbState(state: 'idle' | 'listening' | 'speaking') {
           orb?.classList.remove('talk-listening', 'talk-speaking');
@@ -343,15 +372,16 @@ import { profile } from '../data/experience';
           setStatus('Gokul AI is speaking...');
 
           const lang = navigator.language || 'en-US';
-          // Playing a freshly created <audio> element's .play() outside a direct
-          // user gesture is its own, separately gated autoplay check (mobile
-          // Safari in particular silently rejects it even though the call's mic
-          // permission and AudioContext were already granted/unlocked). Play the
-          // fetched voice through the AudioContext we already resumed
-          // synchronously inside the call-start click instead - Web Audio
-          // playback is gated by that context's running state, not by a fresh
-          // per-call gesture check, so it keeps working for the whole call.
-          if (lang.toLowerCase().startsWith('en') && audioContext) {
+          // <audio> elements bypass iOS's hardware ringer/silent switch (they're
+          // "media playback", like a music app), whereas raw Web Audio API output
+          // does not - it gets silenced by that switch. So we play through a real
+          // <audio> element, but reuse the SAME element for every reply. A brand
+          // new element's .play() outside a direct gesture is rejected on mobile
+          // Safari; this one element was already unlocked with a synchronous,
+          // gesture-linked play() at call start (see the click handler below),
+          // and once one element is unlocked its later async plays keep working
+          // for the rest of the call.
+          if (lang.toLowerCase().startsWith('en') && audioEl) {
             try {
               const res = await fetchWithTimeout(
                 '/api/speak',
@@ -363,36 +393,31 @@ import { profile } from '../data/experience';
                 SPEAK_FETCH_TIMEOUT_MS
               );
               if (res.ok) {
-                const arrayBuffer = await res.arrayBuffer();
-                if (audioContext.state === 'suspended') {
-                  try {
-                    await audioContext.resume();
-                  } catch {
-                    // ignore
-                  }
-                }
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                const blob = await res.blob();
                 if (!callActive) return;
 
-                try {
-                  currentTtsSource?.stop();
-                } catch {
-                  // ignore
-                }
+                const url = URL.createObjectURL(blob);
+                const previousUrl = currentTtsUrl;
+                currentTtsUrl = url;
 
-                const source = audioContext.createBufferSource();
-                source.buffer = audioBuffer;
-                source.connect(audioContext.destination);
-                currentTtsSource = source;
-                source.onended = () => {
-                  if (currentTtsSource === source) currentTtsSource = null;
+                const cleanup = () => {
+                  audioEl.removeEventListener('ended', cleanup);
+                  audioEl.removeEventListener('error', cleanup);
+                  URL.revokeObjectURL(url);
+                  if (currentTtsUrl === url) currentTtsUrl = null;
                   onEnd();
                 };
-                source.start();
+                audioEl.addEventListener('ended', cleanup, { once: true });
+                audioEl.addEventListener('error', cleanup, { once: true });
+
+                audioEl.muted = false;
+                audioEl.src = url;
+                await audioEl.play();
+                if (previousUrl) URL.revokeObjectURL(previousUrl);
                 return;
               }
             } catch {
-              // timed out, aborted, decode error, or network error — fall through to browser voice
+              // timed out, aborted, or network error — fall through to browser voice
             }
           }
 
@@ -581,12 +606,17 @@ import { profile } from '../data/experience';
 
           stopVad();
           window.speechSynthesis.cancel();
-          try {
-            currentTtsSource?.stop();
-          } catch {
-            // ignore
+          if (audioEl) {
+            try {
+              audioEl.pause();
+            } catch {
+              // ignore
+            }
           }
-          currentTtsSource = null;
+          if (currentTtsUrl) {
+            URL.revokeObjectURL(currentTtsUrl);
+            currentTtsUrl = null;
+          }
 
           try {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
@@ -625,6 +655,24 @@ import { profile } from '../data/experience';
             window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
           } catch {
             // ignore
+          }
+
+          // Unlock the reusable <audio> element used for Gokul AI's voice: play a
+          // silent clip synchronously within this click so mobile Safari treats
+          // this element as gesture-authorized, then every later async play() on
+          // it (once the actual reply comes back from Groq) keeps working without
+          // needing its own gesture.
+          if (audioEl) {
+            try {
+              const unlockUrl = createSilentAudioUrl();
+              audioEl.src = unlockUrl;
+              await audioEl.play();
+              audioEl.pause();
+              audioEl.currentTime = 0;
+              URL.revokeObjectURL(unlockUrl);
+            } catch {
+              // ignore — speak() will fall back to browser voice if this didn't take
+            }
           }
 
           try {
