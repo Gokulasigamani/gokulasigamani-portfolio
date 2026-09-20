@@ -130,6 +130,22 @@ import { profile } from '../data/experience';
       const SPEECH_GAP_TOLERANCE_MS = 200;
       const SILENCE_MS = 700;
       const MAX_RECORD_MS = 20000;
+      const TRANSCRIBE_TIMEOUT_MS = 15000;
+      const CHAT_TIMEOUT_MS = 15000;
+      const SPEAK_FETCH_TIMEOUT_MS = 8000;
+
+      // Every network call in the call pipeline goes through this so a slow/stalled
+      // Groq response can never hang the call forever — it aborts and the caller's
+      // existing error handling takes over instead.
+      async function fetchWithTimeout(input: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          return await fetch(input, { ...init, signal: controller.signal });
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      }
 
       // Groq Whisper hallucinates short stock phrases on silence/noise-only audio
       // (e.g. it transcribes true silence as "Thank you."). Filter those out instead
@@ -232,8 +248,6 @@ import { profile } from '../data/experience';
           window.setTimeout(() => window.speechSynthesis.speak(utterance), 50);
         }
 
-        const SPEAK_FETCH_TIMEOUT_MS = 8000;
-
         async function speak(text: string, onEnd: () => void) {
           setOrbState('speaking');
           setStatus('Gokul AI is speaking...');
@@ -241,19 +255,15 @@ import { profile } from '../data/experience';
           const lang = navigator.language || 'en-US';
           if (lang.toLowerCase().startsWith('en')) {
             try {
-              const controller = new AbortController();
-              const timeout = window.setTimeout(() => controller.abort(), SPEAK_FETCH_TIMEOUT_MS);
-              let res: Response;
-              try {
-                res = await fetch('/api/speak', {
+              const res = await fetchWithTimeout(
+                '/api/speak',
+                {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ text }),
-                  signal: controller.signal
-                });
-              } finally {
-                window.clearTimeout(timeout);
-              }
+                  body: JSON.stringify({ text })
+                },
+                SPEAK_FETCH_TIMEOUT_MS
+              );
               if (res.ok) {
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -376,7 +386,11 @@ import { profile } from '../data/experience';
           try {
             const form = new FormData();
             form.set('file', blob, 'clip.webm');
-            const transcribeRes = await fetch('/api/transcribe', { method: 'POST', body: form });
+            const transcribeRes = await fetchWithTimeout(
+              '/api/transcribe',
+              { method: 'POST', body: form },
+              TRANSCRIBE_TIMEOUT_MS
+            );
             const transcribeData = await transcribeRes.json();
             if (!callActive) return;
 
@@ -388,11 +402,15 @@ import { profile } from '../data/experience';
 
             history.push({ role: 'user', content: transcript });
 
-            const res = await fetch('/api/chat', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ messages: history, mode: 'voice' })
-            });
+            const res = await fetchWithTimeout(
+              '/api/chat',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: history, mode: 'voice' })
+              },
+              CHAT_TIMEOUT_MS
+            );
             const data = await res.json();
             if (!callActive) return;
 
@@ -448,13 +466,11 @@ import { profile } from '../data/experience';
             return;
           }
 
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          } catch {
-            setStatus('Microphone permission denied.');
-            return;
-          }
-
+          // iOS Safari (and several Android WebViews) only let an AudioContext resume
+          // out of suspended state when that call is still inside the original click's
+          // gesture. Awaiting getUserMedia first breaks that chain and leaves the
+          // context permanently suspended, so the volume analyser reads silence forever
+          // and the call never detects speech. Create + resume it synchronously first.
           audioContext = new AudioContext();
           if (audioContext.state === 'suspended') {
             try {
@@ -463,6 +479,21 @@ import { profile } from '../data/experience';
               // ignore
             }
           }
+          try {
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+          } catch {
+            // ignore
+          }
+
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch {
+            setStatus('Microphone permission denied.');
+            audioContext?.close();
+            audioContext = null;
+            return;
+          }
+
           analyser = audioContext.createAnalyser();
           analyser.fftSize = 1024;
           audioContext.createMediaStreamSource(stream).connect(analyser);
@@ -470,11 +501,6 @@ import { profile } from '../data/experience';
           callActive = true;
           callBtn.classList.add('talk-active');
           callBtn.setAttribute('aria-label', 'End call');
-          try {
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-          } catch {
-            // ignore
-          }
           startListeningTurn();
         });
       }
