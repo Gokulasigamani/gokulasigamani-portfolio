@@ -84,16 +84,13 @@ import logo from '../assets/images/logo.png';
   </div>
 
   <nav class="relative flex-1 overflow-y-auto px-6 py-4">
-    {navLinks.map((link, i) => (
+    {navLinks.map((link) => (
       <a
         href={link.href}
         class="menu-link group flex items-center justify-between border-b border-white/10 py-5 first:pt-2"
       >
-        <span class="flex items-baseline gap-3">
-          <span class="font-body text-xs font-medium text-white/40">0{i + 1}</span>
-          <span class="font-display text-2xl font-semibold text-white transition-colors group-hover:text-[#C9A8C4]">
-            {link.label}
-          </span>
+        <span class="font-display text-2xl font-semibold text-white transition-colors group-hover:text-[#C9A8C4]">
+          {link.label}
         </span>
         <svg viewBox="0 0 24 24" class="h-4 w-4 shrink-0 text-white/30 transition-all group-hover:translate-x-0.5 group-hover:text-white/70" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 6l6 6-6 6" />
