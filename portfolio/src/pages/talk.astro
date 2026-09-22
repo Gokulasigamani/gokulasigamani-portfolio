@@ -460,16 +460,42 @@ Astro.response.headers.set('Cache-Control', 'no-store');
           return '';
         }
 
-        function startListeningTurn() {
-          if (!callActive || !stream) return;
+        async function startListeningTurn() {
+          if (!callActive) return;
+
+          // Acquire a fresh mic stream for every turn instead of holding one
+          // open for the whole call. On mobile, an open getUserMedia stream
+          // competing with <audio> TTS playback for the same audio session
+          // can leave the NEXT recording silent even though it starts
+          // without error - the OS doesn't always hand the session back
+          // cleanly once playback finishes. Releasing and reacquiring each
+          // turn sidesteps that instead of hoping the shared session
+          // recovers, which is what made the second turn in a call fail
+          // while the first (before any playback happened) worked fine.
+          let turnStream: MediaStream;
+          try {
+            turnStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch (err) {
+            console.error('[talk] getUserMedia failed:', err);
+            if (callActive) endCall('Microphone access denied or lost. Tap to try again.');
+            return;
+          }
+
+          if (!callActive) {
+            turnStream.getTracks().forEach((track) => track.stop());
+            return;
+          }
+
+          stream = turnStream;
 
           const mimeType = pickRecorderMimeType();
           recordedChunks = [];
           try {
-            mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+            mediaRecorder = mimeType ? new MediaRecorder(turnStream, { mimeType }) : new MediaRecorder(turnStream);
           } catch (err) {
             console.error('[talk] Failed to start recorder:', err);
-            setStatus('Could not access the microphone. Please try again.');
+            turnStream.getTracks().forEach((track) => track.stop());
+            if (callActive) endCall('Could not access the microphone. Tap to try again.');
             return;
           }
 
@@ -479,6 +505,9 @@ Astro.response.headers.set('Cache-Control', 'no-store');
 
           mediaRecorder.addEventListener('stop', () => {
             window.clearTimeout(recordTimeout);
+            turnStream.getTracks().forEach((track) => track.stop());
+            if (stream === turnStream) stream = null;
+
             if (!callActive) return;
 
             if (recordedChunks.length === 0) {
@@ -559,12 +588,12 @@ Astro.response.headers.set('Cache-Control', 'no-store');
           }
         }
 
-        function endCall() {
+        function endCall(message = 'Tap to start talking') {
           callActive = false;
           callBtn?.classList.remove('talk-active');
           callBtn?.setAttribute('aria-label', 'Start call');
           setOrbState('idle');
-          setStatus('Tap to start talking');
+          setStatus(message);
 
           window.clearTimeout(recordTimeout);
           recordTimeout = 0;
@@ -628,18 +657,13 @@ Astro.response.headers.set('Cache-Control', 'no-store');
             }
           }
 
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          } catch (err) {
-            console.error('[talk] getUserMedia failed:', err);
-            setStatus('Microphone permission denied.');
-            return;
-          }
-
+          // startListeningTurn() acquires its own mic stream (and handles a
+          // permission denial by reverting this back to idle), so there's no
+          // separate getUserMedia call needed here.
           callActive = true;
           callBtn.classList.add('talk-active');
           callBtn.setAttribute('aria-label', 'End call');
-          startListeningTurn();
+          void startListeningTurn();
         });
       }
     </script>
