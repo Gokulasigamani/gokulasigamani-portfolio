@@ -50,35 +50,31 @@ export const techStack = [
 ];
 
 export const focusIntro = {
-  eyebrow: '02 / WHERE I ADD VALUE',
+  eyebrow: 'WHERE I ADD VALUE',
   heading: ['A little curiosity.', 'A lot of craft.'],
   note: "Different problems. Different stacks. Find where I can help. I'll take it from there."
 };
 
 export const focusAreas = [
   {
-    index: '01',
     label: 'CODE',
     title: 'The full stack.',
     sub: 'React, Node & APIs',
     icon: '<path d="M9 6l-5 6 5 6M15 6l5 6-5 6"/>'
   },
   {
-    index: '02',
     label: 'CLOUD',
     title: 'Built to scale.',
     sub: 'AWS infrastructure',
     icon: '<path d="M7 18a4 4 0 1 1 .7-7.94 5 5 0 0 1 9.6 1.9A3.5 3.5 0 0 1 17 18H7Z"/>'
   },
   {
-    index: '03',
     label: 'AUTOMATION',
     title: 'Work, automated.',
     sub: 'n8n, Langflow & AI',
     icon: '<circle cx="5" cy="6" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="18" r="1.6"/><path d="M6.4 7.1l4.2 3.8M13.4 13.1l4.2 3.8"/>'
   },
   {
-    index: '04',
     label: 'DELIVERY',
     title: 'Ship it clean.',
     sub: 'End-to-end ownership',
@@ -95,7 +91,7 @@ export const focusHighlight = {
 };
 
 export const philosophy = {
-  eyebrow: '03 / A DIFFERENT KIND OF DEVELOPER',
+  eyebrow: 'A DIFFERENT KIND OF DEVELOPER',
   line1: 'More human.',
   line2Prefix: 'Less ',
   line2Accent: 'boilerplate.',
@@ -104,28 +100,25 @@ export const philosophy = {
 };
 
 export const journeyIntro = {
-  eyebrow: '04 / A TRACK RECORD, NOT A PITCH',
+  eyebrow: 'A TRACK RECORD, NOT A PITCH',
   heading: ['Where I’ve worked.', 'What I’ve shipped.'],
   imageCaption: 'BUILDING FULL-STACK PRODUCTS SINCE 2023.'
 };
 
 export const journeySteps = [
   {
-    index: '01',
     label: 'DEC 2025 – PRESENT',
     title: 'Software Engineer',
     sub: 'Stellar Innovations Private Ltd: full-stack apps with React, Node, AWS & SQL.',
     icon: '<path d="M7 18a4 4 0 1 1 .7-7.94 5 5 0 0 1 9.6 1.9A3.5 3.5 0 0 1 17 18H7Z"/>'
   },
   {
-    index: '02',
     label: 'OCT 2024 – OCT 2025',
     title: 'Front-End and AI Developer',
     sub: 'App Mastery, Remote: React, Tailwind, AWS, and n8n/Langflow-powered automation.',
     icon: '<circle cx="5" cy="6" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="18" r="1.6"/><path d="M6.4 7.1l4.2 3.8M13.4 13.1l4.2 3.8"/>'
   },
   {
-    index: '03',
     label: 'DEC 2023 – JAN 2024',
     title: 'Full Stack Developer Intern',
     sub: 'WeDesign Tech: HTML5, CSS3, JavaScript & React fundamentals.',
@@ -134,7 +127,7 @@ export const journeySteps = [
 ];
 
 export const journeyPlan = {
-  eyebrow: '05 / WHERE IT ALL STARTED',
+  eyebrow: 'WHERE IT ALL STARTED',
   imageLabel: 'CLASS OF 2025',
   rightHeading: ['B.Tech, Information Technology.', 'Anna University, CGPA 8.0/10.'],
   body: 'Four years at Dr. Mahalingam College of Engineering and Technology, Pollachi, where curiosity turned into a full-stack skill set, an AWS Certified Cloud Practitioner credential, and a Full Stack MERN Development course along the way.',
@@ -145,7 +138,7 @@ export const aboutIntro = {
   label: 'DEVELOPER. DEBUGGER. FULL-TIME OVERTHINKER.',
   heading: ['Mostly caffeine,', 'partly code.'],
   note: ['Turns coffee into commits.', 'Ships things that actually work.'],
-  footerLabel: '07 / A FEW THINGS ABOUT ME'
+  footerLabel: 'A FEW THINGS ABOUT ME'
 };
 
 export const aboutCraft = {
@@ -180,7 +173,7 @@ export const aboutStrip = [
 ];
 
 export const achievementsIntro = {
-  eyebrow: '08 / A FEW THINGS I’M PROUD OF',
+  eyebrow: 'A FEW THINGS I’M PROUD OF',
   heading: ['Good work.', 'Clear results.'],
   note: 'A little proof before you take my word for it.',
   askLabel: 'Something else you’d like to see?',
@@ -231,7 +224,7 @@ export const footerMeta = {
 };
 
 export const contactIntro = {
-  eyebrow: '09 / LET’S TALK',
+  eyebrow: 'LET’S TALK',
   status: 'Available for new projects',
   heading: ['Let’s start', 'a conversation.'],
   note: 'Whether it’s a new project, a role, or just a technical question, I read every message myself.',
@@ -271,7 +264,7 @@ export const contactAvailability = {
 };
 
 export const ventureIntro = {
-  eyebrow: '06 / BEYOND THE 9-TO-5',
+  eyebrow: 'BEYOND THE 9-TO-5',
   heading: ['Building something', 'of my own.'],
   note: 'Alongside client work, I co-founded an IT solutions company, helping businesses modernize their infrastructure and ship digital products.'
 };
